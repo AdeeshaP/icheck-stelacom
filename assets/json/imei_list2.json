@@ -1,0 +1,14 @@
+{
+    "username": "Adeesha Perera",
+    "assigned_date": "2025-08-28",
+    "devices": [
+        {
+            "imei": "356789012345678",
+            "model": "Samsung Galaxy S23"
+        },
+        {
+            "imei": "868451067157541",
+            "model": "Redmi note 13 Pro+"
+        }
+    ]
+}

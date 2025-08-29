@@ -1,0 +1,86 @@
+{
+    "username": "Adeesha Perera",
+    "assigned_date": "2025-08-28",
+    "devices": [
+        {
+            "imei": "356789012345678",
+            "model": "Samsung Galaxy S23"
+        },
+        {
+            "imei": "863456789012345",
+            "model": "iPhone 14 Pro"
+        },
+        {
+            "imei": "357654321098765",
+            "model": "OnePlus 12"
+        },
+        {
+            "imei": "868451067157541",
+            "model": "Redmi Note 13 Pro+"
+        },
+        {
+            "imei": "351234567890123",
+            "model": "Google Pixel 8 Pro"
+        },
+        {
+            "imei": "867818030320813",
+            "model": "Huawei Y5"
+        },
+        {
+            "imei": "356749010342322",
+            "model": "Samsung Galaxy M02"
+        },
+        {
+            "imei": "355678901234567",
+            "model": "Oppo Find X6"
+        },
+        {
+            "imei": "861234567890987",
+            "model": "Vivo X90 Pro"
+        },
+        {
+            "imei": "352345678901234",
+            "model": "Asus ROG Phone 7"
+        },
+        {
+            "imei": "868765432109876",
+            "model": "Motorola Edge 40"
+        },
+        {
+            "imei": "R1234567890ABC1",
+            "model": "Netgear Nighthawk Router AX6000"
+        },
+        {
+            "imei": "R0987654321DEF2",
+            "model": "TP-Link Archer AX11000 Router"
+        },
+        {
+            "imei": "R5678901234GHI3",
+            "model": "Huawei 5G CPE Pro 2 Router"
+        },
+        {
+            "imei": "R6789012345JKL4",
+            "model": "Asus RT-AX88U Router"
+        },
+        {
+            "imei": "LAPTOP-987654321001",
+            "model": "Dell XPS 15"
+        },
+        {
+            "imei": "LAPTOP-123456789002",
+            "model": "MacBook Pro 16 M3"
+        },
+        {
+            "imei": "LAPTOP-234567890003",
+            "model": "HP Spectre x360"
+        },
+        {
+            "imei": "LAPTOP-345678901004",
+            "model": "Lenovo ThinkPad X1 Carbon"
+        },
+        {
+            "imei": "LAPTOP-456789012005",
+            "model": "Asus ZenBook Duo"
+        }
+    ]
+}
