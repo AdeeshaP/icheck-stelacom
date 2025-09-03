@@ -36,7 +36,7 @@ class StyledCheckInPopup extends StatelessWidget {
         },
         child: Container(
           width: 320,
-          padding: EdgeInsets.all(24),
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -129,7 +129,7 @@ class StyledCheckInPopup extends StatelessWidget {
 
               // Details Container
               Container(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),

@@ -8,11 +8,12 @@ import '../../components/utils/custom_error_dialog.dart';
 import '../../components/utils/dialogs.dart';
 
 class LocationValidationService {
-  static Future<bool> validateLocationForInventoryScan(BuildContext context) async {
+  static Future<bool> validateLocationForInventoryScan(
+      BuildContext context) async {
     try {
       // Show loading dialog
       showProgressDialog(context);
-      
+
       // Get user data from SharedPreferences
       SharedPreferences storage = await SharedPreferences.getInstance();
       String? userData = storage.getString('user_data');
@@ -21,98 +22,105 @@ class LocationValidationService {
         _showErrorDialog(context, 'User data not found');
         return false;
       }
-      
+
       Map<String, dynamic> userObj = jsonDecode(userData);
-      
+
       // Get location restrictions from API
       var response = await ApiService.getAllLocationRestritions(
           userObj["Code"], userObj["CustomerId"]);
-      
-      if (response == null || response.statusCode != 200 || response.body == "null") {
+
+      if (response == null ||
+          response.statusCode != 200 ||
+          response.body == "null") {
         closeDialog(context);
         _showErrorDialog(context, 'Failed to fetch location restrictions');
         return false;
       }
-      
+
       List<dynamic> locationRestrictions = jsonDecode(response.body);
-      
+
       // If no location restrictions, allow access
       if (locationRestrictions.isEmpty) {
         closeDialog(context);
         return true;
       }
-      
+
       // Check location services and permissions
       final GeolocatorPlatform geolocatorPlatform = GeolocatorPlatform.instance;
-      
-      bool isLocationServiceEnabled = await geolocatorPlatform.isLocationServiceEnabled();
+
+      bool isLocationServiceEnabled =
+          await geolocatorPlatform.isLocationServiceEnabled();
       if (!isLocationServiceEnabled) {
         closeDialog(context);
         _showLocationServiceDisabledDialog(context);
         return false;
       }
-      
-      LocationPermission permission = await geolocatorPlatform.checkPermission();
-      if (permission == LocationPermission.denied || 
+
+      LocationPermission permission =
+          await geolocatorPlatform.checkPermission();
+      if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         closeDialog(context);
         _showLocationPermissionDialog(context);
         return false;
       }
-      
+
       // Get current position with high accuracy
       Position currentPosition = await geolocatorPlatform.getCurrentPosition(
           locationSettings: LocationSettings(accuracy: LocationAccuracy.high));
-      
+
       // Process each location using the EXACT same logic as your original code
       for (var element in locationRestrictions) {
         // Use the same distance calculation method as your original code
         double distance2 = _distanceBetweenTwoLocations(
-            currentPosition.latitude, 
+            currentPosition.latitude,
             currentPosition.longitude,
-            double.parse(element['InLat']), 
+            double.parse(element['InLat']),
             double.parse(element['InLong']));
 
         // Apply the same distance calculation as your original code
         element['Distance'] = distance2 * 1000 - element['Radius'];
-        
+
         print('Location: ${element['Name']}, Distance: ${element['Distance']}');
       }
-      
+
       // Apply the EXACT same blocking logic as your original code
-      var blockedLocations = locationRestrictions.where((object) =>
-          object['Distance'] > 0 && object['AllowedByPass'] == 0).toList();
-      
+      var blockedLocations = locationRestrictions
+          .where((object) =>
+              (object['Distance'] > 0 && object['AllowedByPass'] == 0) ||
+              (object['AllowedByPass'] == 1) && object['Distance'] > 0)
+          .toList();
+
       print('Total locations: ${locationRestrictions.length}');
       print('Blocked locations: ${blockedLocations.length}');
-      
+
       bool shouldBlock = blockedLocations.length == locationRestrictions.length;
-      
+
       closeDialog(context);
-      
+
       if (shouldBlock) {
         // Find the closest location for error message
-        var closestLocation = locationRestrictions.reduce((a, b) => 
-            a['Distance'] < b['Distance'] ? a : b);
-        
+        var closestLocation = locationRestrictions
+            .reduce((a, b) => a['Distance'] < b['Distance'] ? a : b);
+
         double distanceKm = closestLocation['Distance'] / 1000;
         String locationName = closestLocation['Name'] ?? 'assigned location';
-        
-        _showLocationRestrictionDialog(context, 
-            'You are ${distanceKm.toStringAsFixed(3)} KM away from $locationName');
+
+        _showLocationRestrictionDialog(context,
+            'You are ${distanceKm.toStringAsFixed(3)} KM away from the correct location');
         return false;
       }
-      
+
       return true;
-      
     } catch (e) {
       closeDialog(context);
-      _showErrorDialog(context, 'Location validation failed. Please try again.');
+      _showErrorDialog(
+          context, 'Location validation failed. Please try again.');
       print('Location validation error: $e');
       return false;
     }
   }
-  
+
   /// Use the EXACT same distance calculation as your original code
   static double _toRadians(double degrees) => degrees * pi / 180;
 
@@ -127,12 +135,13 @@ class LocationValidationService {
     final lat1Radians = _toRadians(lat1);
     final lat2Radians = _toRadians(lat2);
 
-    final a = _haversin(dLat) + cos(lat1Radians) * cos(lat2Radians) * _haversin(dLon);
+    final a =
+        _haversin(dLat) + cos(lat1Radians) * cos(lat2Radians) * _haversin(dLon);
     final c = 2 * asin(sqrt(a));
 
     return r * c;
   }
-  
+
   static void _showLocationServiceDisabledDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -148,14 +157,15 @@ class LocationValidationService {
       ),
     );
   }
-  
+
   static void _showLocationPermissionDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => CustomErrorDialog(
         title: 'Location Permission Required',
-        message: 'Location permission is required to use Inventory Scan feature',
+        message:
+            'Location permission is required to use Inventory Scan feature',
         onOkPressed: () {
           Navigator.of(context).pop();
         },
@@ -163,14 +173,16 @@ class LocationValidationService {
       ),
     );
   }
-  
-  static void _showLocationRestrictionDialog(BuildContext context, String message) {
+
+  static void _showLocationRestrictionDialog(
+      BuildContext context, String message) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => CustomErrorDialog(
-        title: 'Blocked!',
-        message: 'Inventory Scan is not available from your current location. You are not at the exact location or inside the assigned radius.\n\n$message and Please move to the assigned location.',
+        title: 'Error!',
+        message:
+            'Inventory Scan is not available from your current location. You are not at the exact location or inside the assigned radius.\n\n$message. Please move to the assigned location.',
         onOkPressed: () {
           Navigator.of(context).pop();
         },
@@ -178,7 +190,7 @@ class LocationValidationService {
       ),
     );
   }
-  
+
   static void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,

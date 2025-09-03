@@ -7,8 +7,28 @@
             "model": "Samsung Galaxy S23"
         },
         {
+            "imei": "863456789012345",
+            "model": "iPhone 14 Pro"
+        },
+        {
+            "imei": "868765432109876",
+            "model": "Motorola Edge 40"
+        },
+        {
             "imei": "868451067157541",
-            "model": "Redmi note 13 Pro+"
+            "model": "Redmi Note 13 Pro+"
+        },
+        {
+            "imei": "351234567890123",
+            "model": "Google Pixel 8 Pro"
+        },
+        {
+            "imei": "867818030320813",
+            "model": "Huawei Y5"
+        },
+        {
+            "imei": "355678901234567",
+            "model": "Samsung Galaxy M02"
         }
     ]
 }

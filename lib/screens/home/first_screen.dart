@@ -119,6 +119,7 @@ class _HomeScreen extends State<HomeScreen>
         builder: (context, appState, child) {
           List homeScreenList = [
             Dashboard(index3: widget.index2),
+            // ModernDashboard(index3: widget.index2),
             AttendacneDashboardScreen(
               user: userObj,
               index3: widget.index2,

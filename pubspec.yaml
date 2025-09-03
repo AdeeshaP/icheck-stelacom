@@ -88,6 +88,7 @@ flutter:
     - assets/images/
     - assets/iCheck_user_manual.pdf
     - assets/json/imei_list.json
+    - assets/json/imei_list2.json
     - assets/
   #   - images/a_dot_ham.jpeg
 

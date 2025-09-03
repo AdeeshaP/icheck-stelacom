@@ -37,7 +37,8 @@ class Dashboard extends StatefulWidget {
   State<Dashboard> createState() => _DashboardState();
 }
 
-class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
+class _DashboardState extends State<Dashboard>
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   late SharedPreferences _storage;
   Map<String, dynamic>? userObj;
   Map<String, dynamic>? lastCheckIn;
@@ -55,6 +56,8 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
   String formattedDate = "";
   String formattedInTime = "";
   String formattedOutTime = "";
+  late AnimationController _pulseController;
+  late AnimationController _buttonController;
 
   @override
   void setState(fn) {
@@ -80,11 +83,23 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     Timer.periodic(Duration(seconds: 1), (timer) {
       updateWorkTime();
     });
+
+    _pulseController = AnimationController(
+      duration: Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _buttonController = AnimationController(
+      duration: Duration(milliseconds: 300),
+      vsync: this,
+    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _pulseController.dispose();
+    _buttonController.dispose();
     super.dispose();
   }
 
@@ -294,6 +309,9 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     }
   }
 
+  bool get isCheckedIn =>
+      lastCheckIn != null && lastCheckIn!["OutTime"] == null;
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -404,770 +422,1137 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
             body: SingleChildScrollView(
               child: Column(
                 children: [
-                  // Time and Date Section
-                  Container(
-                    height: 160,
-                    width: size.width * 0.9,
-                    padding: EdgeInsets.symmetric(vertical: 16.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(30),
-                        bottomRight: Radius.circular(30),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          spreadRadius: 1,
-                          blurRadius: 10,
-                          offset: Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          appState.officeTime,
-                          style: TextStyle(
-                            fontSize: Responsive.isMobileSmall(context)
-                                ? 25
-                                : Responsive.isMobileMedium(context) ||
-                                        Responsive.isMobileLarge(context)
-                                    ? 30
-                                    : Responsive.isTabletPortrait(context)
-                                        ? 35
-                                        : 35,
-                            fontWeight: FontWeight.bold,
-                            color: screenHeadingColor,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          appState.officeDate,
-                          style: TextStyle(
-                            fontSize: Responsive.isMobileSmall(context)
-                                ? 16
-                                : Responsive.isMobileMedium(context) ||
-                                        Responsive.isMobileLarge(context)
-                                    ? 18
-                                    : Responsive.isTabletPortrait(context)
-                                        ? 20
-                                        : 22,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 24.0),
-                          child: Text(
-                            appState.officeAddress,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: Responsive.isMobileSmall(context)
-                                  ? 14
-                                  : Responsive.isMobileMedium(context) ||
-                                          Responsive.isMobileLarge(context)
-                                      ? 15.5
-                                      : Responsive.isTabletPortrait(context)
-                                          ? 18
-                                          : 20,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  //------------- Time and Date Section--------------
+
+                  // Container(
+                  //   height: 160,
+                  //   width: size.width * 0.9,
+                  //   padding: EdgeInsets.symmetric(vertical: 16.0),
+                  //   decoration: BoxDecoration(
+                  //     color: Colors.white,
+                  //     borderRadius: BorderRadius.only(
+                  //       bottomLeft: Radius.circular(30),
+                  //       bottomRight: Radius.circular(30),
+                  //     ),
+                  //     boxShadow: [
+                  //       BoxShadow(
+                  //         color: Colors.grey.withOpacity(0.2),
+                  //         spreadRadius: 1,
+                  //         blurRadius: 10,
+                  //         offset: Offset(0, 10),
+                  //       ),
+                  //     ],
+                  //   ),
+                  //   child: SingleChildScrollView(
+                  //     child: Column(
+                  //       children: [
+                  //         Text(
+                  //           appState.officeTime,
+                  //           style: TextStyle(
+                  //             fontSize: Responsive.isMobileSmall(context)
+                  //                 ? 25
+                  //                 : Responsive.isMobileMedium(context) ||
+                  //                         Responsive.isMobileLarge(context)
+                  //                     ? 30
+                  //                     : Responsive.isTabletPortrait(context)
+                  //                         ? 35
+                  //                         : 35,
+                  //             fontWeight: FontWeight.bold,
+                  //             color: screenHeadingColor,
+                  //           ),
+                  //         ),
+                  //         SizedBox(height: 8),
+                  //         Text(
+                  //           appState.officeDate,
+                  //           style: TextStyle(
+                  //             fontSize: Responsive.isMobileSmall(context)
+                  //                 ? 16
+                  //                 : Responsive.isMobileMedium(context) ||
+                  //                         Responsive.isMobileLarge(context)
+                  //                     ? 18
+                  //                     : Responsive.isTabletPortrait(context)
+                  //                         ? 20
+                  //                         : 22,
+                  //             color: Colors.grey[700],
+                  //           ),
+                  //         ),
+                  //         SizedBox(height: 12),
+                  //         Padding(
+                  //           padding: EdgeInsets.symmetric(horizontal: 24.0),
+                  //           child: Text(
+                  //             appState.officeAddress,
+                  //             textAlign: TextAlign.center,
+                  //             style: TextStyle(
+                  //               fontSize: Responsive.isMobileSmall(context)
+                  //                   ? 14
+                  //                   : Responsive.isMobileMedium(context) ||
+                  //                           Responsive.isMobileLarge(context)
+                  //                       ? 15.5
+                  //                       : Responsive.isTabletPortrait(context)
+                  //                           ? 18
+                  //                           : 20,
+                  //               color: Colors.grey[600],
+                  //             ),
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
 
                   // Action Buttons
-                  Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 24, vertical: 20.0),
-                    child: Column(
-                      children: [
-                        //------------- Check In Button-------------
-                        ElevatedButton(
-                          onPressed: () {
-                            if (lastCheckIn == null ||
-                                lastCheckIn!["OutTime"] != null) {
-                              Geolocator.isLocationServiceEnabled()
-                                  .then((bool serviceEnabled) {
-                                //check whether user is deactivated or not
-                                if (userObj!['Deleted'] == 0) {
-                                  if (serviceEnabled) {
-                                    if (userObj!['EnableLocation'] > 0) {
-                                      if (userObj![
-                                              'EnableLocationRestriction'] ==
-                                          1) {
-                                        _storage.setString('Action', 'checkin');
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ChangeNotifierProvider(
-                                              create: (context) =>
-                                                  LocationRestrictionState(),
-                                              child: ValidateLocation(
-                                                widget.index3,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        Navigator.of(context,
-                                                rootNavigator: true)
-                                            .push(
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ChangeNotifierProvider(
-                                                    create: (context) =>
-                                                        AppState(),
-                                                    child: CheckInCapture()),
-                                          ),
-                                        );
-                                      }
-                                    } else {
-                                      Navigator.of(context, rootNavigator: true)
-                                          .push(
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              ChangeNotifierProvider(
-                                                  create: (context) =>
-                                                      AppState(),
-                                                  child: CheckInCapture()),
-                                        ),
-                                      );
-                                    }
-                                  } else {
-                                    Geolocator.checkPermission()
-                                        .then((LocationPermission permission) {
-                                      if (permission ==
-                                              LocationPermission.denied ||
-                                          permission ==
-                                              LocationPermission
-                                                  .deniedForever) {
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) => CustomErrorDialog(
-                                              title:
-                                                  'Location Service Disabled.',
-                                              message:
-                                                  'Please enable location service before trying visit.',
-                                              onOkPressed: switchOnLocation,
-                                              iconData: Icons.error_outline),
-                                        );
-                                      } else {
-                                        if (userObj!['EnableLocation'] > 0) {
-                                          if (userObj![
-                                                  'EnableLocationRestriction'] ==
-                                              1) {
-                                            _storage.setString(
-                                                'Action', 'checkin');
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    ChangeNotifierProvider(
-                                                        create: (context) =>
-                                                            LocationRestrictionState(),
-                                                        child: ValidateLocation(
-                                                            widget.index3)),
-                                              ),
-                                            );
-                                          } else {
-                                            Navigator.of(context,
-                                                    rootNavigator: true)
-                                                .push(
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    ChangeNotifierProvider(
-                                                        create: (context) =>
-                                                            AppState(),
-                                                        child:
-                                                            CheckInCapture()),
-                                              ),
-                                            );
-                                          }
-                                        } else {
-                                          Navigator.of(context,
-                                                  rootNavigator: true)
-                                              .push(
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ChangeNotifierProvider(
-                                                      create: (context) =>
-                                                          AppState(),
-                                                      child: CheckInCapture()),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    });
-                                  }
-                                } else {
-                                  //Tell user that his account is deactivated
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => CustomErrorDialog(
-                                        title: 'Inactive User',
-                                        message:
-                                            'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
-                                        onOkPressed: () =>
-                                            Navigator.of(context).pop(),
-                                        iconData: Icons.no_accounts_sharp),
-                                  );
-                                }
-                              });
-                            } else {}
-                          },
-                          style: ElevatedButton.styleFrom(
-                            fixedSize: Size(size.width, 60),
-                            backgroundColor: (lastCheckIn == null ||
-                                    lastCheckIn!["OutTime"] != null)
-                                ? actionBtnColor
-                                : Color(0xFFBDBDBD),
-                            foregroundColor: (lastCheckIn == null ||
-                                    lastCheckIn!["OutTime"] != null)
-                                ? Colors.white
-                                : Colors.black54,
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'Check In',
-                            style: TextStyle(
-                                fontSize: Responsive.isMobileSmall(context)
-                                    ? 16
-                                    : Responsive.isMobileMedium(context)
-                                        ? 18
-                                        : Responsive.isMobileLarge(context)
-                                            ? 19
-                                            : Responsive.isTabletPortrait(
-                                                    context)
-                                                ? 20
-                                                : 22,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        SizedBox(height: 12),
+                  // Padding(
+                  //   padding:
+                  //       EdgeInsets.symmetric(horizontal: 24, vertical: 20.0),
+                  //   child: Column(
+                  //     children: [
+                  //       //------------- Check In Button-------------
+                  //       ElevatedButton(
+                  //         onPressed: () {
+                  //           if (lastCheckIn == null ||
+                  //               lastCheckIn!["OutTime"] != null) {
+                  //             Geolocator.isLocationServiceEnabled()
+                  //                 .then((bool serviceEnabled) {
+                  //               //check whether user is deactivated or not
+                  //               if (userObj!['Deleted'] == 0) {
+                  //                 if (serviceEnabled) {
+                  //                   if (userObj!['EnableLocation'] > 0) {
+                  //                     if (userObj![
+                  //                             'EnableLocationRestriction'] ==
+                  //                         1) {
+                  //                       _storage.setString('Action', 'checkin');
+                  //                       Navigator.of(context).push(
+                  //                         MaterialPageRoute(
+                  //                           builder: (context) =>
+                  //                               ChangeNotifierProvider(
+                  //                             create: (context) =>
+                  //                                 LocationRestrictionState(),
+                  //                             child: ValidateLocation(
+                  //                               widget.index3,
+                  //                             ),
+                  //                           ),
+                  //                         ),
+                  //                       );
+                  //                     } else {
+                  //                       Navigator.of(context,
+                  //                               rootNavigator: true)
+                  //                           .push(
+                  //                         MaterialPageRoute(
+                  //                           builder: (context) =>
+                  //                               ChangeNotifierProvider(
+                  //                                   create: (context) =>
+                  //                                       AppState(),
+                  //                                   child: CheckInCapture()),
+                  //                         ),
+                  //                       );
+                  //                     }
+                  //                   } else {
+                  //                     Navigator.of(context, rootNavigator: true)
+                  //                         .push(
+                  //                       MaterialPageRoute(
+                  //                         builder: (context) =>
+                  //                             ChangeNotifierProvider(
+                  //                                 create: (context) =>
+                  //                                     AppState(),
+                  //                                 child: CheckInCapture()),
+                  //                       ),
+                  //                     );
+                  //                   }
+                  //                 } else {
+                  //                   Geolocator.checkPermission()
+                  //                       .then((LocationPermission permission) {
+                  //                     if (permission ==
+                  //                             LocationPermission.denied ||
+                  //                         permission ==
+                  //                             LocationPermission
+                  //                                 .deniedForever) {
+                  //                       showDialog(
+                  //                         context: context,
+                  //                         builder: (context) => CustomErrorDialog(
+                  //                             title:
+                  //                                 'Location Service Disabled.',
+                  //                             message:
+                  //                                 'Please enable location service before trying visit.',
+                  //                             onOkPressed: switchOnLocation,
+                  //                             iconData: Icons.error_outline),
+                  //                       );
+                  //                     } else {
+                  //                       if (userObj!['EnableLocation'] > 0) {
+                  //                         if (userObj![
+                  //                                 'EnableLocationRestriction'] ==
+                  //                             1) {
+                  //                           _storage.setString(
+                  //                               'Action', 'checkin');
+                  //                           Navigator.of(context).push(
+                  //                             MaterialPageRoute(
+                  //                               builder: (context) =>
+                  //                                   ChangeNotifierProvider(
+                  //                                       create: (context) =>
+                  //                                           LocationRestrictionState(),
+                  //                                       child: ValidateLocation(
+                  //                                           widget.index3)),
+                  //                             ),
+                  //                           );
+                  //                         } else {
+                  //                           Navigator.of(context,
+                  //                                   rootNavigator: true)
+                  //                               .push(
+                  //                             MaterialPageRoute(
+                  //                               builder: (context) =>
+                  //                                   ChangeNotifierProvider(
+                  //                                       create: (context) =>
+                  //                                           AppState(),
+                  //                                       child:
+                  //                                           CheckInCapture()),
+                  //                             ),
+                  //                           );
+                  //                         }
+                  //                       } else {
+                  //                         Navigator.of(context,
+                  //                                 rootNavigator: true)
+                  //                             .push(
+                  //                           MaterialPageRoute(
+                  //                             builder: (context) =>
+                  //                                 ChangeNotifierProvider(
+                  //                                     create: (context) =>
+                  //                                         AppState(),
+                  //                                     child: CheckInCapture()),
+                  //                           ),
+                  //                         );
+                  //                       }
+                  //                     }
+                  //                   });
+                  //                 }
+                  //               } else {
+                  //                 //Tell user that his account is deactivated
+                  //                 showDialog(
+                  //                   context: context,
+                  //                   builder: (context) => CustomErrorDialog(
+                  //                       title: 'Inactive User',
+                  //                       message:
+                  //                           'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
+                  //                       onOkPressed: () =>
+                  //                           Navigator.of(context).pop(),
+                  //                       iconData: Icons.no_accounts_sharp),
+                  //                 );
+                  //               }
+                  //             });
+                  //           } else {}
+                  //         },
+                  //         style: ElevatedButton.styleFrom(
+                  //           fixedSize: Size(size.width, 60),
+                  //           backgroundColor: (lastCheckIn == null ||
+                  //                   lastCheckIn!["OutTime"] != null)
+                  //               ? actionBtnColor
+                  //               : Color(0xFFBDBDBD),
+                  //           foregroundColor: (lastCheckIn == null ||
+                  //                   lastCheckIn!["OutTime"] != null)
+                  //               ? Colors.white
+                  //               : Colors.black54,
+                  //           padding: EdgeInsets.symmetric(vertical: 16),
+                  //           shape: RoundedRectangleBorder(
+                  //             borderRadius: BorderRadius.circular(12),
+                  //           ),
+                  //         ),
+                  //         child: Text(
+                  //           'Check In',
+                  //           style: TextStyle(
+                  //               fontSize: Responsive.isMobileSmall(context)
+                  //                   ? 16
+                  //                   : Responsive.isMobileMedium(context)
+                  //                       ? 18
+                  //                       : Responsive.isMobileLarge(context)
+                  //                           ? 19
+                  //                           : Responsive.isTabletPortrait(
+                  //                                   context)
+                  //                               ? 20
+                  //                               : 22,
+                  //               fontWeight: FontWeight.bold),
+                  //         ),
+                  //       ),
+                  //       SizedBox(height: 12),
 
-                        // ----------Check Out Button--------------
-                        ElevatedButton(
-                          onPressed: () {
-                            if ((lastCheckIn == null ||
-                                lastCheckIn!["OutTime"] != null)) {
-                            } else {
-                              Geolocator.isLocationServiceEnabled().then(
-                                (bool serviceEnabled) {
-                                  //check whether user is deactivated or not
-                                  if (userObj!['Deleted'] == 0) {
-                                    if (serviceEnabled) {
-                                      if (userObj!['EnableLocation'] > 0) {
-                                        if (userObj![
-                                                'EnableLocationRestriction'] ==
-                                            1) {
-                                          _storage.setString(
-                                              'Action', 'checkout');
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ChangeNotifierProvider(
-                                                create: (context) =>
-                                                    LocationRestrictionState(),
-                                                child: ValidateLocation(
-                                                  widget.index3,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        } else {
-                                          Navigator.of(context,
-                                                  rootNavigator: true)
-                                              .push(
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ChangeNotifierProvider(
-                                                      create: (context) =>
-                                                          AppState(),
-                                                      child: CheckoutCapture()),
-                                            ),
-                                          );
-                                        }
-                                      } else {
-                                        Navigator.of(context,
-                                                rootNavigator: true)
-                                            .push(
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ChangeNotifierProvider(
-                                              create: (context) => AppState(),
-                                              child: CheckoutCapture(),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    } else {
-                                      Geolocator.checkPermission().then(
-                                          (LocationPermission permission) {
-                                        if (permission ==
-                                                LocationPermission.denied ||
-                                            permission ==
-                                                LocationPermission
-                                                    .deniedForever) {
-                                          showDialog(
-                                            context: context,
-                                            builder: (context) => CustomErrorDialog(
-                                                title:
-                                                    'Location Service Disabled.',
-                                                message:
-                                                    'Please enable location service before trying visit.',
-                                                onOkPressed: () =>
-                                                    Navigator.of(context).pop(),
-                                                iconData: Icons.error_outline),
-                                          );
-                                        } else {
-                                          if (userObj!['EnableLocation'] > 0) {
-                                            if (userObj![
-                                                    'EnableLocationRestriction'] ==
-                                                1) {
-                                              _storage.setString(
-                                                  'Action', 'checkout');
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ChangeNotifierProvider(
-                                                    create: (context) =>
-                                                        LocationRestrictionState(),
-                                                    child: ValidateLocation(
-                                                        widget.index3),
-                                                  ),
-                                                ),
-                                              );
-                                            } else {
-                                              Navigator.of(context,
-                                                      rootNavigator: true)
-                                                  .push(
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ChangeNotifierProvider(
-                                                    create: (context) =>
-                                                        AppState(),
-                                                    child: CheckoutCapture(),
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                          } else {
-                                            Navigator.of(context,
-                                                    rootNavigator: true)
-                                                .push(
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    ChangeNotifierProvider(
-                                                  create: (context) =>
-                                                      AppState(),
-                                                  child: CheckoutCapture(),
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      });
-                                    }
-                                  } else {
-                                    //Tell user that his account is deactivated
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => CustomErrorDialog(
-                                          title: 'Inactive User',
-                                          message:
-                                              'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
-                                          onOkPressed: () =>
-                                              Navigator.of(context).pop(),
-                                          iconData: Icons.no_accounts_sharp),
-                                    );
-                                  }
-                                },
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            fixedSize: Size(size.width, 60),
-                            backgroundColor: (lastCheckIn == null ||
-                                    lastCheckIn!["OutTime"] != null)
-                                ? Color(0XFFBDBDBD)
-                                : actionBtnColor,
-                            foregroundColor: (lastCheckIn == null ||
-                                    lastCheckIn!["OutTime"] != null)
-                                ? Colors.black54
-                                : Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'Check Out',
-                            style: TextStyle(
-                                fontSize: Responsive.isMobileSmall(context)
-                                    ? 16
-                                    : Responsive.isMobileMedium(context)
-                                        ? 18
-                                        : Responsive.isMobileLarge(context)
-                                            ? 19
-                                            : Responsive.isTabletPortrait(
-                                                    context)
-                                                ? 20
-                                                : 22,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        SizedBox(height: 12),
+                  //       // ----------Check Out Button--------------
+                  //       ElevatedButton(
+                  //         onPressed: () {
+                  //           if ((lastCheckIn == null ||
+                  //               lastCheckIn!["OutTime"] != null)) {
+                  //           } else {
+                  //             Geolocator.isLocationServiceEnabled().then(
+                  //               (bool serviceEnabled) {
+                  //                 //check whether user is deactivated or not
+                  //                 if (userObj!['Deleted'] == 0) {
+                  //                   if (serviceEnabled) {
+                  //                     if (userObj!['EnableLocation'] > 0) {
+                  //                       if (userObj![
+                  //                               'EnableLocationRestriction'] ==
+                  //                           1) {
+                  //                         _storage.setString(
+                  //                             'Action', 'checkout');
+                  //                         Navigator.of(context).push(
+                  //                           MaterialPageRoute(
+                  //                             builder: (context) =>
+                  //                                 ChangeNotifierProvider(
+                  //                               create: (context) =>
+                  //                                   LocationRestrictionState(),
+                  //                               child: ValidateLocation(
+                  //                                 widget.index3,
+                  //                               ),
+                  //                             ),
+                  //                           ),
+                  //                         );
+                  //                       } else {
+                  //                         Navigator.of(context,
+                  //                                 rootNavigator: true)
+                  //                             .push(
+                  //                           MaterialPageRoute(
+                  //                             builder: (context) =>
+                  //                                 ChangeNotifierProvider(
+                  //                                     create: (context) =>
+                  //                                         AppState(),
+                  //                                     child: CheckoutCapture()),
+                  //                           ),
+                  //                         );
+                  //                       }
+                  //                     } else {
+                  //                       Navigator.of(context,
+                  //                               rootNavigator: true)
+                  //                           .push(
+                  //                         MaterialPageRoute(
+                  //                           builder: (context) =>
+                  //                               ChangeNotifierProvider(
+                  //                             create: (context) => AppState(),
+                  //                             child: CheckoutCapture(),
+                  //                           ),
+                  //                         ),
+                  //                       );
+                  //                     }
+                  //                   } else {
+                  //                     Geolocator.checkPermission().then(
+                  //                         (LocationPermission permission) {
+                  //                       if (permission ==
+                  //                               LocationPermission.denied ||
+                  //                           permission ==
+                  //                               LocationPermission
+                  //                                   .deniedForever) {
+                  //                         showDialog(
+                  //                           context: context,
+                  //                           builder: (context) => CustomErrorDialog(
+                  //                               title:
+                  //                                   'Location Service Disabled.',
+                  //                               message:
+                  //                                   'Please enable location service before trying visit.',
+                  //                               onOkPressed: () =>
+                  //                                   Navigator.of(context).pop(),
+                  //                               iconData: Icons.error_outline),
+                  //                         );
+                  //                       } else {
+                  //                         if (userObj!['EnableLocation'] > 0) {
+                  //                           if (userObj![
+                  //                                   'EnableLocationRestriction'] ==
+                  //                               1) {
+                  //                             _storage.setString(
+                  //                                 'Action', 'checkout');
+                  //                             Navigator.of(context).push(
+                  //                               MaterialPageRoute(
+                  //                                 builder: (context) =>
+                  //                                     ChangeNotifierProvider(
+                  //                                   create: (context) =>
+                  //                                       LocationRestrictionState(),
+                  //                                   child: ValidateLocation(
+                  //                                       widget.index3),
+                  //                                 ),
+                  //                               ),
+                  //                             );
+                  //                           } else {
+                  //                             Navigator.of(context,
+                  //                                     rootNavigator: true)
+                  //                                 .push(
+                  //                               MaterialPageRoute(
+                  //                                 builder: (context) =>
+                  //                                     ChangeNotifierProvider(
+                  //                                   create: (context) =>
+                  //                                       AppState(),
+                  //                                   child: CheckoutCapture(),
+                  //                                 ),
+                  //                               ),
+                  //                             );
+                  //                           }
+                  //                         } else {
+                  //                           Navigator.of(context,
+                  //                                   rootNavigator: true)
+                  //                               .push(
+                  //                             MaterialPageRoute(
+                  //                               builder: (context) =>
+                  //                                   ChangeNotifierProvider(
+                  //                                 create: (context) =>
+                  //                                     AppState(),
+                  //                                 child: CheckoutCapture(),
+                  //                               ),
+                  //                             ),
+                  //                           );
+                  //                         }
+                  //                       }
+                  //                     });
+                  //                   }
+                  //                 } else {
+                  //                   //Tell user that his account is deactivated
+                  //                   showDialog(
+                  //                     context: context,
+                  //                     builder: (context) => CustomErrorDialog(
+                  //                         title: 'Inactive User',
+                  //                         message:
+                  //                             'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
+                  //                         onOkPressed: () =>
+                  //                             Navigator.of(context).pop(),
+                  //                         iconData: Icons.no_accounts_sharp),
+                  //                   );
+                  //                 }
+                  //               },
+                  //             );
+                  //           }
+                  //         },
+                  //         style: ElevatedButton.styleFrom(
+                  //           fixedSize: Size(size.width, 60),
+                  //           backgroundColor: (lastCheckIn == null ||
+                  //                   lastCheckIn!["OutTime"] != null)
+                  //               ? Color(0XFFBDBDBD)
+                  //               : actionBtnColor,
+                  //           foregroundColor: (lastCheckIn == null ||
+                  //                   lastCheckIn!["OutTime"] != null)
+                  //               ? Colors.black54
+                  //               : Colors.white,
+                  //           padding: EdgeInsets.symmetric(vertical: 16),
+                  //           shape: RoundedRectangleBorder(
+                  //             borderRadius: BorderRadius.circular(12),
+                  //           ),
+                  //         ),
+                  //         child: Text(
+                  //           'Check Out',
+                  //           style: TextStyle(
+                  //               fontSize: Responsive.isMobileSmall(context)
+                  //                   ? 16
+                  //                   : Responsive.isMobileMedium(context)
+                  //                       ? 18
+                  //                       : Responsive.isMobileLarge(context)
+                  //                           ? 19
+                  //                           : Responsive.isTabletPortrait(
+                  //                                   context)
+                  //                               ? 20
+                  //                               : 22,
+                  //               fontWeight: FontWeight.bold),
+                  //         ),
+                  //       ),
+                  //       SizedBox(height: 12),
 
-                        //------------ Visit Button------------------
-                        ElevatedButton(
-                          onPressed: () {
-                            if ((lastCheckIn == null || //additional line
-                                lastCheckIn!["OutTime"] != null)) {
-                              //additional line
-                            } else {
-                              //additional line
-                              Geolocator.isLocationServiceEnabled()
-                                  .then((bool serviceEnabled) {
-                                if (userObj!['Deleted'] == 0) {
-                                  if (serviceEnabled) {
-                                    Navigator.of(context, rootNavigator: true)
-                                        .push(
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ChangeNotifierProvider(
-                                                create: (context) => AppState(),
-                                                child: VisitCapture()),
-                                      ),
-                                    );
-                                  } else {
-                                    Geolocator.checkPermission()
-                                        .then((LocationPermission permission) {
-                                      if (permission ==
-                                              LocationPermission.denied ||
-                                          permission ==
-                                              LocationPermission
-                                                  .deniedForever) {
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) => CustomErrorDialog(
-                                              title:
-                                                  'Location Service Disabled.',
-                                              message:
-                                                  'Please enable location service before trying visit.',
-                                              onOkPressed: () =>
-                                                  Navigator.of(context).pop(),
-                                              iconData: Icons.error_outline),
-                                        );
-                                      } else {
-                                        Navigator.of(context,
-                                                rootNavigator: true)
-                                            .push(
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ChangeNotifierProvider(
-                                              create: (context) => AppState(),
-                                              child: VisitCapture(),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    });
-                                  }
-                                } else {
-                                  //Tell user that his account is deactivated
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => CustomErrorDialog(
-                                        title: 'Inactive User',
-                                        message:
-                                            'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
-                                        onOkPressed: () =>
-                                            Navigator.of(context).pop(),
-                                        iconData: Icons.no_accounts_sharp),
-                                  );
-                                }
-                              });
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            fixedSize: Size(size.width, 60),
-                            backgroundColor: (lastCheckIn == null ||
-                                    lastCheckIn!["OutTime"] != null)
-                                ? Color(0XFFBDBDBD)
-                                : actionBtnColor,
-                            foregroundColor: (lastCheckIn == null ||
-                                    lastCheckIn!["OutTime"] != null)
-                                ? Colors.black54
-                                : Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'Visit',
-                            style: TextStyle(
-                                fontSize: Responsive.isMobileSmall(context)
-                                    ? 16
-                                    : Responsive.isMobileMedium(context)
-                                        ? 18
-                                        : Responsive.isMobileLarge(context)
-                                            ? 19
-                                            : Responsive.isTabletPortrait(
-                                                    context)
-                                                ? 20
-                                                : 22,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        //------------ Inventory Scan Button------------------
-                        Container(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              bool isLocationValid =
-                                  await LocationValidationService
-                                      .validateLocationForInventoryScan(
-                                          context);
+                  //       //------------ Visit Button------------------
+                  //       ElevatedButton(
+                  //         onPressed: () {
+                  //           if ((lastCheckIn == null || //additional line
+                  //               lastCheckIn!["OutTime"] != null)) {
+                  //             //additional line
+                  //           } else {
+                  //             //additional line
+                  //             Geolocator.isLocationServiceEnabled()
+                  //                 .then((bool serviceEnabled) {
+                  //               if (userObj!['Deleted'] == 0) {
+                  //                 if (serviceEnabled) {
+                  //                   Navigator.of(context, rootNavigator: true)
+                  //                       .push(
+                  //                     MaterialPageRoute(
+                  //                       builder: (context) =>
+                  //                           ChangeNotifierProvider(
+                  //                               create: (context) => AppState(),
+                  //                               child: VisitCapture()),
+                  //                     ),
+                  //                   );
+                  //                 } else {
+                  //                   Geolocator.checkPermission()
+                  //                       .then((LocationPermission permission) {
+                  //                     if (permission ==
+                  //                             LocationPermission.denied ||
+                  //                         permission ==
+                  //                             LocationPermission
+                  //                                 .deniedForever) {
+                  //                       showDialog(
+                  //                         context: context,
+                  //                         builder: (context) => CustomErrorDialog(
+                  //                             title:
+                  //                                 'Location Service Disabled.',
+                  //                             message:
+                  //                                 'Please enable location service before trying visit.',
+                  //                             onOkPressed: () =>
+                  //                                 Navigator.of(context).pop(),
+                  //                             iconData: Icons.error_outline),
+                  //                       );
+                  //                     } else {
+                  //                       Navigator.of(context,
+                  //                               rootNavigator: true)
+                  //                           .push(
+                  //                         MaterialPageRoute(
+                  //                           builder: (context) =>
+                  //                               ChangeNotifierProvider(
+                  //                             create: (context) => AppState(),
+                  //                             child: VisitCapture(),
+                  //                           ),
+                  //                         ),
+                  //                       );
+                  //                     }
+                  //                   });
+                  //                 }
+                  //               } else {
+                  //                 //Tell user that his account is deactivated
+                  //                 showDialog(
+                  //                   context: context,
+                  //                   builder: (context) => CustomErrorDialog(
+                  //                       title: 'Inactive User',
+                  //                       message:
+                  //                           'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
+                  //                       onOkPressed: () =>
+                  //                           Navigator.of(context).pop(),
+                  //                       iconData: Icons.no_accounts_sharp),
+                  //                 );
+                  //               }
+                  //             });
+                  //           }
+                  //         },
+                  //         style: ElevatedButton.styleFrom(
+                  //           fixedSize: Size(size.width, 60),
+                  //           backgroundColor: (lastCheckIn == null ||
+                  //                   lastCheckIn!["OutTime"] != null)
+                  //               ? Color(0XFFBDBDBD)
+                  //               : actionBtnColor,
+                  //           foregroundColor: (lastCheckIn == null ||
+                  //                   lastCheckIn!["OutTime"] != null)
+                  //               ? Colors.black54
+                  //               : Colors.white,
+                  //           padding: EdgeInsets.symmetric(vertical: 16),
+                  //           shape: RoundedRectangleBorder(
+                  //             borderRadius: BorderRadius.circular(12),
+                  //           ),
+                  //         ),
+                  //         child: Text(
+                  //           'Visit',
+                  //           style: TextStyle(
+                  //               fontSize: Responsive.isMobileSmall(context)
+                  //                   ? 16
+                  //                   : Responsive.isMobileMedium(context)
+                  //                       ? 18
+                  //                       : Responsive.isMobileLarge(context)
+                  //                           ? 19
+                  //                           : Responsive.isTabletPortrait(
+                  //                                   context)
+                  //                               ? 20
+                  //                               : 22,
+                  //               fontWeight: FontWeight.bold),
+                  //         ),
+                  //       ),
+                  //       SizedBox(height: 12),
 
-                              if (isLocationValid) {
-                                // Navigate to Inventory Scan screen
-                                Navigator.of(context, rootNavigator: true).push(
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          EnhancedBarcodeScannerScreen(
-                                              index: widget.index3)),
-                                );
-                              }
-                              // Error dialog is automatically shown if location is invalid
-                              // If location is invalid, error dialog is already shown by the service
-                              // if ((lastCheckIn == null ||
-                              //     lastCheckIn!["OutTime"] != null)) {
-                              // } else {
-                              //   //additional line
-                              //   Geolocator.isLocationServiceEnabled()
-                              //       .then((bool serviceEnabled) {
-                              //     if (userObj!['Deleted'] == 0) {
-                              //       if (serviceEnabled) {
-                              //         Navigator.push(
-                              //           context,
-                              //           MaterialPageRoute(
-                              //               builder: (context) =>
-                              //                   BarcodeScannerScreen()),
-                              //         );
-                              //       } else {
-                              //         Geolocator.checkPermission().then(
-                              //             (LocationPermission permission) {
-                              //           if (permission ==
-                              //                   LocationPermission.denied ||
-                              //               permission ==
-                              //                   LocationPermission
-                              //                       .deniedForever) {
-                              //             showDialog(
-                              //               context: context,
-                              //               builder: (context) => CustomErrorDialog(
-                              //                   title:
-                              //                       'Location Service Disabled.',
-                              //                   message:
-                              //                       'Please enable location service before trying visit.',
-                              //                   onOkPressed: () =>
-                              //                       Navigator.of(context).pop(),
-                              //                   iconData: Icons.error_outline),
-                              //             );
-                              //           } else {
-                              //             Navigator.push(
-                              //               context,
-                              //               MaterialPageRoute(
-                              //                   builder: (context) =>
-                              //                       BarcodeScannerScreen()),
-                              //             );
-                              //           }
-                              //         });
-                              //       }
-                              //     } else {
-                              //       //Tell user that his account is deactivated
-                              //       showDialog(
-                              //         context: context,
-                              //         builder: (context) => CustomErrorDialog(
-                              //             title: 'Inactive User',
-                              //             message:
-                              //                 'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
-                              //             onOkPressed: () =>
-                              //                 Navigator.of(context).pop(),
-                              //             iconData: Icons.no_accounts_sharp),
-                              //       );
-                              //     }
-                              //   });
-                              // }
-                              // Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder: (context) => BarcodeScannerScreen(
-                              //       index: widget.index3,
-                              //     ),
-                              //   ),
-                              // );
-                              // Navigator.of(context).push(
-                              //   MaterialPageRoute(
-                              //     builder: (context) =>
-                              //         EnhancedBarcodeScannerScreen(
-                              //             index: widget.index3),
-                              //   ),
-                              // );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              fixedSize: Size(size.width, 60),
-                              backgroundColor: (lastCheckIn == null ||
-                                      lastCheckIn!["OutTime"] != null)
-                                  ? Color(0XFFBDBDBD)
-                                  : actionBtnColor,
-                              foregroundColor: (lastCheckIn == null ||
-                                      lastCheckIn!["OutTime"] != null)
-                                  ? Colors.black54
-                                  : Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'Inventory Scan',
-                              style: TextStyle(
-                                  fontSize: Responsive.isMobileSmall(context)
-                                      ? 16
-                                      : Responsive.isMobileMedium(context)
-                                          ? 18
-                                          : Responsive.isMobileLarge(context)
-                                              ? 19
-                                              : Responsive.isTabletPortrait(
-                                                      context)
-                                                  ? 20
-                                                  : 22,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  //       //------------ Inventory Scan Button------------------
+                  //       Container(
+                  //         width: double.infinity,
+                  //         child: ElevatedButton(
+                  //           onPressed: () async {
+                  //             if ((lastCheckIn == null ||
+                  //                 lastCheckIn!["OutTime"] != null)) {
+                  //             } else {
+                  //               Geolocator.isLocationServiceEnabled()
+                  //                   .then((bool serviceEnabled) async {
+                  //                 if (userObj!['Deleted'] == 0) {
+                  //                   if (serviceEnabled) {
+                  //                     bool isLocationValid =
+                  //                         await LocationValidationService
+                  //                             .validateLocationForInventoryScan(
+                  //                                 context);
 
-                  // Work Time Status
-                  Container(
-                    // width: size.width * 0.7,
-                    margin: EdgeInsets.symmetric(horizontal: 24),
-                    padding: EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          spreadRadius: 1,
-                          blurRadius: 10,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Work Time : ',
-                          style: TextStyle(
-                            fontSize: Responsive.isMobileSmall(context)
-                                ? 17
-                                : Responsive.isMobileMedium(context) ||
-                                        Responsive.isMobileLarge(context)
-                                    ? 19
-                                    : Responsive.isTabletPortrait(context)
-                                        ? 22
-                                        : 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          workedTime,
-                          style: TextStyle(
-                            fontSize: Responsive.isMobileSmall(context)
-                                ? workedTime == "Not checked in yet"
-                                    ? 16
-                                    : 20
-                                : Responsive.isMobileMedium(context) ||
-                                        Responsive.isMobileLarge(context)
-                                    ? workedTime == "Not checked in yet"
-                                        ? 19
-                                        : 23
-                                    : Responsive.isTabletPortrait(context)
-                                        ? workedTime == "Not checked in yet"
-                                            ? 22
-                                            : 25
-                                        : 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  //                     if (isLocationValid) {
+                  //                       // Navigate to Inventory Scan screen
+                  //                       Navigator.of(context,
+                  //                               rootNavigator: true)
+                  //                           .push(
+                  //                         MaterialPageRoute(
+                  //                             builder: (context) =>
+                  //                                 EnhancedBarcodeScannerScreen(
+                  //                                     index: widget.index3)),
+                  //                       );
+                  //                     }
+                  //                   } else {
+                  //                     Geolocator.checkPermission().then(
+                  //                         (LocationPermission permission) {
+                  //                       if (permission ==
+                  //                               LocationPermission.denied ||
+                  //                           permission ==
+                  //                               LocationPermission
+                  //                                   .deniedForever) {
+                  //                         showDialog(
+                  //                           context: context,
+                  //                           builder: (context) => CustomErrorDialog(
+                  //                               title:
+                  //                                   'Location Service Disabled.',
+                  //                               message:
+                  //                                   'Please enable location service before trying visit.',
+                  //                               onOkPressed: () =>
+                  //                                   Navigator.of(context).pop(),
+                  //                               iconData: Icons.error_outline),
+                  //                         );
+                  //                       }
+                  //                     });
+                  //                   }
+                  //                 } else {
+                  //                   //Tell user that his account is deactivated
+                  //                   showDialog(
+                  //                     context: context,
+                  //                     builder: (context) => CustomErrorDialog(
+                  //                         title: 'Inactive User',
+                  //                         message:
+                  //                             'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
+                  //                         onOkPressed: () =>
+                  //                             Navigator.of(context).pop(),
+                  //                         iconData: Icons.no_accounts_sharp),
+                  //                   );
+                  //                 }
+                  //               });
+                  //             }
+                  //           },
+                  //           style: ElevatedButton.styleFrom(
+                  //             fixedSize: Size(size.width, 60),
+                  //             backgroundColor: (lastCheckIn == null ||
+                  //                     lastCheckIn!["OutTime"] != null)
+                  //                 ? Color(0XFFBDBDBD)
+                  //                 : actionBtnColor,
+                  //             foregroundColor: (lastCheckIn == null ||
+                  //                     lastCheckIn!["OutTime"] != null)
+                  //                 ? Colors.black54
+                  //                 : Colors.white,
+                  //             padding: EdgeInsets.symmetric(vertical: 16),
+                  //             shape: RoundedRectangleBorder(
+                  //               borderRadius: BorderRadius.circular(12),
+                  //             ),
+                  //           ),
+                  //           child: Text(
+                  //             'Inventory Scan',
+                  //             style: TextStyle(
+                  //                 fontSize: Responsive.isMobileSmall(context)
+                  //                     ? 16
+                  //                     : Responsive.isMobileMedium(context)
+                  //                         ? 18
+                  //                         : Responsive.isMobileLarge(context)
+                  //                             ? 19
+                  //                             : Responsive.isTabletPortrait(
+                  //                                     context)
+                  //                                 ? 20
+                  //                                 : 22,
+                  //                 fontWeight: FontWeight.bold),
+                  //           ),
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
 
-                  // Profile Section
-                  Container(
-                    margin: EdgeInsets.all(15),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.grey[200],
-                          backgroundImage: userObj != null &&
-                                  userObj!["ProfileImage"] != null
-                              ? userObj!["ProfileImage"] !=
-                                      "https://0830s3gvuh.execute-api.us-east-2.amazonaws.com/dev/services-file?bucket=icheckfaceimages&image=None"
-                                  ? NetworkImage(userObj!["ProfileImage"])
-                                  : NetworkImage(
-                                      "https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png",
-                                    )
-                              : NetworkImage(
-                                  "https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png",
-                                ),
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          userObj != null
-                              ? userObj!['LastName'] != null
-                                  ? userObj!["FirstName"] +
-                                      " " +
-                                      userObj!["LastName"]
-                                  : userObj!['LastName']
-                              : "",
-                          style: TextStyle(
-                            fontSize: Responsive.isMobileSmall(context)
-                                ? 18
-                                : Responsive.isMobileMedium(context) ||
-                                        Responsive.isMobileLarge(context)
-                                    ? 20
-                                    : Responsive.isTabletPortrait(context)
-                                        ? 25
-                                        : 25,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // ------------Work Time Status--------------
+                  // Container(
+                  //   // width: size.width * 0.7,
+                  //   margin: EdgeInsets.symmetric(horizontal: 24),
+                  //   padding: EdgeInsets.all(20),
+                  //   decoration: BoxDecoration(
+                  //     color: Colors.white,
+                  //     borderRadius: BorderRadius.circular(12),
+                  //     boxShadow: [
+                  //       BoxShadow(
+                  //         color: Colors.grey.withOpacity(0.2),
+                  //         spreadRadius: 1,
+                  //         blurRadius: 10,
+                  //         offset: Offset(0, 3),
+                  //       ),
+                  //     ],
+                  //   ),
+                  //   child: Row(
+                  //     mainAxisAlignment: MainAxisAlignment.center,
+                  //     children: [
+                  //       Text(
+                  //         'Work Time : ',
+                  //         style: TextStyle(
+                  //           fontSize: Responsive.isMobileSmall(context)
+                  //               ? 17
+                  //               : Responsive.isMobileMedium(context) ||
+                  //                       Responsive.isMobileLarge(context)
+                  //                   ? 19
+                  //                   : Responsive.isTabletPortrait(context)
+                  //                       ? 22
+                  //                       : 24,
+                  //           fontWeight: FontWeight.bold,
+                  //           color: Colors.black87,
+                  //         ),
+                  //       ),
+                  //       SizedBox(width: 8),
+                  //       Text(
+                  //         workedTime,
+                  //         style: TextStyle(
+                  //           fontSize: Responsive.isMobileSmall(context)
+                  //               ? workedTime == "Not checked in yet"
+                  //                   ? 16
+                  //                   : 20
+                  //               : Responsive.isMobileMedium(context) ||
+                  //                       Responsive.isMobileLarge(context)
+                  //                   ? workedTime == "Not checked in yet"
+                  //                       ? 19
+                  //                       : 23
+                  //                   : Responsive.isTabletPortrait(context)
+                  //                       ? workedTime == "Not checked in yet"
+                  //                           ? 22
+                  //                           : 25
+                  //                       : 16,
+                  //           color: Colors.grey[600],
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+
+                  //---------- Profile Section-------------
+                  // Container(
+                  //   margin: EdgeInsets.all(15),
+                  //   child: Column(
+                  //     children: [
+                  //       CircleAvatar(
+                  //         radius: 40,
+                  //         backgroundColor: Colors.grey[200],
+                  //         backgroundImage: userObj != null &&
+                  //                 userObj!["ProfileImage"] != null
+                  //             ? userObj!["ProfileImage"] !=
+                  //                     "https://0830s3gvuh.execute-api.us-east-2.amazonaws.com/dev/services-file?bucket=icheckfaceimages&image=None"
+                  //                 ? NetworkImage(userObj!["ProfileImage"])
+                  //                 : NetworkImage(
+                  //                     "https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png",
+                  //                   )
+                  //             : NetworkImage(
+                  //                 "https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png",
+                  //               ),
+                  //       ),
+                  //       SizedBox(height: 12),
+                  //       Text(
+                  //         userObj != null
+                  //             ? userObj!['LastName'] != null
+                  //                 ? userObj!["FirstName"] +
+                  //                     " " +
+                  //                     userObj!["LastName"]
+                  //                 : userObj!['LastName']
+                  //             : "",
+                  //         style: TextStyle(
+                  //           fontSize: Responsive.isMobileSmall(context)
+                  //               ? 18
+                  //               : Responsive.isMobileMedium(context) ||
+                  //                       Responsive.isMobileLarge(context)
+                  //                   ? 20
+                  //                   : Responsive.isTabletPortrait(context)
+                  //                       ? 25
+                  //                       : 25,
+                  //           fontWeight: FontWeight.bold,
+                  //           color: Colors.black87,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+
+                  _buildTimeCard(size),
+                  SizedBox(height: 24),
+
+                  _buildActionButtons(size),
+                  SizedBox(height: 24),
+
+                  _buildWorkTimeCard(size),
+                  SizedBox(height: 24),
+
+                  _buildProfileCard(size, isCheckedIn),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTimeCard(Size size) {
+    return Container(
+      width: size.width * 0.9,
+      margin: EdgeInsets.only(top: 20),
+      padding: EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Color(0xFFFAFAFA)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+         
+
+          // Current Time
+          Text(
+            appState.officeTime,
+            style: TextStyle(
+              fontSize: 25,
+              fontWeight: FontWeight.w300,
+              color: Color(0xFFFF8C00),
+              letterSpacing: 1.5,
+            ),
+          ),
+
+          SizedBox(height: 8),
+
+          // Current Date
+          Text(
+            appState.officeDate,
+            style: TextStyle(
+              fontSize: 16,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          SizedBox(height: 16),
+
+          // Office Address
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Color(0xFFFF8C00).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 22,
+                  color: Color(0xFFFF8C00),
+                ),
+                SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    userObj?['OfficeAddress'] ?? '',
+                    style: TextStyle(
+                      fontSize: Responsive.isMobileSmall(context)
+                          ? 12
+                          : Responsive.isMobileMedium(context) ||
+                                  Responsive.isMobileLarge(context)
+                              ? 13
+                              : Responsive.isTabletPortrait(context)
+                                  ? 18
+                                  : 20,
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkTimeCard(Size size) {
+    return Container(
+      width: isCheckedIn ? size.width * 0.6 : size.width * 0.75,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Work Time Icon - Changed to a more neutral color
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 50,
+              width: 50,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isCheckedIn
+                    ? Color(0xFFFF8C00).withOpacity(0.1)
+                    : Color(0xFF9CA3AF).withOpacity(
+                        0.2), // Green when active, gray when inactive
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.access_time,
+                color: isCheckedIn ? Color(0xFFFF8C00) : Color(0xFF9CA3AF),
+                size: 24,
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: SizedBox(),
+            flex: 1,
+          ),
+          // Work Time Info
+          Expanded(
+            flex: isCheckedIn ? 7 : 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Work Time',
+                  style: TextStyle(
+                    fontSize: Responsive.isMobileSmall(context)
+                        ? 17
+                        : Responsive.isMobileMedium(context) ||
+                                Responsive.isMobileLarge(context)
+                            ? 19
+                            : Responsive.isTabletPortrait(context)
+                                ? 22
+                                : 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 4),
+                AnimatedDefaultTextStyle(
+                  duration: Duration(milliseconds: 300),
+                  style: TextStyle(
+                    fontSize: Responsive.isMobileSmall(context)
+                        ? workedTime == "Not checked in yet"
+                            ? 16
+                            : 20
+                        : Responsive.isMobileMedium(context) ||
+                                Responsive.isMobileLarge(context)
+                            ? workedTime == "Not checked in yet"
+                                ? 19
+                                : 23
+                            : Responsive.isTabletPortrait(context)
+                                ? workedTime == "Not checked in yet"
+                                    ? 22
+                                    : 25
+                                : 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                    letterSpacing: workedTime == "Not checked in yet" ? 0 : 1,
+                  ),
+                  child: Text(
+                    workedTime,
+                    style: TextStyle(
+                      fontSize: Responsive.isMobileSmall(context)
+                          ? workedTime == "Not checked in yet"
+                              ? 16
+                              : 20
+                          : Responsive.isMobileMedium(context) ||
+                                  Responsive.isMobileLarge(context)
+                              ? workedTime == "Not checked in yet"
+                                  ? 19
+                                  : 23
+                              : Responsive.isTabletPortrait(context)
+                                  ? workedTime == "Not checked in yet"
+                                      ? 22
+                                      : 25
+                                  : 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Removed the duplicate "Active" status badge from here
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileCard(Size size, bool isCheckedIn) {
+    return Container(
+      width: size.width * 0.9,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Profile Image with Status Ring
+          Stack(
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isCheckedIn ? Colors.green : Color(0xFF9CA3AF),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          (isCheckedIn ? Color(0xFF10B981) : Color(0xFF9CA3AF))
+                              .withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: userObj != null && userObj!["ProfileImage"] != null
+                      ? userObj!["ProfileImage"] !=
+                              "https://0830s3gvuh.execute-api.us-east-2.amazonaws.com/dev/services-file?bucket=icheckfaceimages&image=None"
+                          ? Image.network(
+                              userObj!["ProfileImage"],
+                              width: 64,
+                              height: 64,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Color(0xFF6B7280),
+                                        Color(0xFF9CA3AF)
+                                      ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                );
+                              },
+                            )
+                          : Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFF6B7280),
+                                    Color(0xFF9CA3AF)
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            )
+                      : Image.network(
+                          "https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png",
+                        ),
+                ),
+              ),
+
+              // Status indicator dot
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: isCheckedIn ? Colors.green : Color(0xFF9CA3AF),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(width: size.width * 0.1),
+
+          // User Info - Keep only this status indicator
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userObj != null
+                      ? userObj!['LastName'] != null
+                          ? userObj!["FirstName"] + " " + userObj!["LastName"]
+                          : userObj!['LastName']
+                      : "",
+                  style: TextStyle(
+                    fontSize: Responsive.isMobileSmall(context)
+                        ? 18
+                        : Responsive.isMobileMedium(context) ||
+                                Responsive.isMobileLarge(context)
+                            ? 20
+                            : Responsive.isTabletPortrait(context)
+                                ? 25
+                                : 25,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isCheckedIn ? Color(0xFF10B981) : Colors.grey,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      isCheckedIn ? 'Available' : 'Not Available',
+                      style: TextStyle(
+                        fontSize: Responsive.isMobileSmall(context)
+                            ? 14
+                            : Responsive.isMobileMedium(context) ||
+                                    Responsive.isMobileLarge(context)
+                                ? 16
+                                : Responsive.isTabletPortrait(context)
+                                    ? 20
+                                    : 20,
+                        color: isCheckedIn ? Color(0xFF10B981) : Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1289,5 +1674,522 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
     return DateTime(date.year, date.month, date.day)
         .difference(DateTime(now.year, now.month, now.day))
         .inDays;
+  }
+
+  Widget _buildActionButtons(Size size) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: _buildActionButton(
+                context: context,
+                size: size,
+                label: 'Check In',
+                icon: Icons.login,
+                isPrimary: true,
+                onPressed: () {
+                  if (lastCheckIn == null || lastCheckIn!["OutTime"] != null) {
+                    Geolocator.isLocationServiceEnabled()
+                        .then((bool serviceEnabled) {
+                      //check whether user is deactivated or not
+                      if (userObj!['Deleted'] == 0) {
+                        if (serviceEnabled) {
+                          if (userObj!['EnableLocation'] > 0) {
+                            if (userObj!['EnableLocationRestriction'] == 1) {
+                              _storage.setString('Action', 'checkin');
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ChangeNotifierProvider(
+                                    create: (context) =>
+                                        LocationRestrictionState(),
+                                    child: ValidateLocation(
+                                      widget.index3,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            } else {
+                              Navigator.of(context, rootNavigator: true).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ChangeNotifierProvider(
+                                      create: (context) => AppState(),
+                                      child: CheckInCapture()),
+                                ),
+                              );
+                            }
+                          } else {
+                            Navigator.of(context, rootNavigator: true).push(
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider(
+                                    create: (context) => AppState(),
+                                    child: CheckInCapture()),
+                              ),
+                            );
+                          }
+                        } else {
+                          Geolocator.checkPermission()
+                              .then((LocationPermission permission) {
+                            if (permission == LocationPermission.denied ||
+                                permission ==
+                                    LocationPermission.deniedForever) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => CustomErrorDialog(
+                                    title: 'Location Service Disabled.',
+                                    message:
+                                        'Please enable location service before trying visit.',
+                                    onOkPressed: switchOnLocation,
+                                    iconData: Icons.error_outline),
+                              );
+                            } else {
+                              if (userObj!['EnableLocation'] > 0) {
+                                if (userObj!['EnableLocationRestriction'] ==
+                                    1) {
+                                  _storage.setString('Action', 'checkin');
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ChangeNotifierProvider(
+                                              create: (context) =>
+                                                  LocationRestrictionState(),
+                                              child: ValidateLocation(
+                                                  widget.index3)),
+                                    ),
+                                  );
+                                } else {
+                                  Navigator.of(context, rootNavigator: true)
+                                      .push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ChangeNotifierProvider(
+                                              create: (context) => AppState(),
+                                              child: CheckInCapture()),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                Navigator.of(context, rootNavigator: true).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ChangeNotifierProvider(
+                                            create: (context) => AppState(),
+                                            child: CheckInCapture()),
+                                  ),
+                                );
+                              }
+                            }
+                          });
+                        }
+                      } else {
+                        //Tell user that his account is deactivated
+                        showDialog(
+                          context: context,
+                          builder: (context) => CustomErrorDialog(
+                              title: 'Inactive User',
+                              message:
+                                  'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
+                              onOkPressed: () => Navigator.of(context).pop(),
+                              iconData: Icons.no_accounts_sharp),
+                        );
+                      }
+                    });
+                  } else {}
+                },
+                bgColor:
+                    (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                        ? actionBtnColor
+                        : Color(0xFFBDBDBD),
+                fontColor:
+                    (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                        ? Colors.white
+                        : Colors.black54,
+              )),
+
+              SizedBox(width: 12),
+
+              // Check Out Button
+              Expanded(
+                child: _buildActionButton(
+                  context: context,
+                  size: size,
+                  label: 'Check Out',
+                  icon: Icons.logout,
+                  isPrimary: false,
+                  onPressed: () {
+                    if ((lastCheckIn == null ||
+                        lastCheckIn!["OutTime"] != null)) {
+                    } else {
+                      Geolocator.isLocationServiceEnabled().then(
+                        (bool serviceEnabled) {
+                          //check whether user is deactivated or not
+                          if (userObj!['Deleted'] == 0) {
+                            if (serviceEnabled) {
+                              if (userObj!['EnableLocation'] > 0) {
+                                if (userObj!['EnableLocationRestriction'] ==
+                                    1) {
+                                  _storage.setString('Action', 'checkout');
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ChangeNotifierProvider(
+                                        create: (context) =>
+                                            LocationRestrictionState(),
+                                        child: ValidateLocation(
+                                          widget.index3,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  Navigator.of(context, rootNavigator: true)
+                                      .push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ChangeNotifierProvider(
+                                              create: (context) => AppState(),
+                                              child: CheckoutCapture()),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                Navigator.of(context, rootNavigator: true).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ChangeNotifierProvider(
+                                      create: (context) => AppState(),
+                                      child: CheckoutCapture(),
+                                    ),
+                                  ),
+                                );
+                              }
+                            } else {
+                              Geolocator.checkPermission()
+                                  .then((LocationPermission permission) {
+                                if (permission == LocationPermission.denied ||
+                                    permission ==
+                                        LocationPermission.deniedForever) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => CustomErrorDialog(
+                                        title: 'Location Service Disabled.',
+                                        message:
+                                            'Please enable location service before trying visit.',
+                                        onOkPressed: () =>
+                                            Navigator.of(context).pop(),
+                                        iconData: Icons.error_outline),
+                                  );
+                                } else {
+                                  if (userObj!['EnableLocation'] > 0) {
+                                    if (userObj!['EnableLocationRestriction'] ==
+                                        1) {
+                                      _storage.setString('Action', 'checkout');
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              ChangeNotifierProvider(
+                                            create: (context) =>
+                                                LocationRestrictionState(),
+                                            child:
+                                                ValidateLocation(widget.index3),
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      Navigator.of(context, rootNavigator: true)
+                                          .push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              ChangeNotifierProvider(
+                                            create: (context) => AppState(),
+                                            child: CheckoutCapture(),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    Navigator.of(context, rootNavigator: true)
+                                        .push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            ChangeNotifierProvider(
+                                          create: (context) => AppState(),
+                                          child: CheckoutCapture(),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              });
+                            }
+                          } else {
+                            //Tell user that his account is deactivated
+                            showDialog(
+                              context: context,
+                              builder: (context) => CustomErrorDialog(
+                                  title: 'Inactive User',
+                                  message:
+                                      'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
+                                  onOkPressed: () =>
+                                      Navigator.of(context).pop(),
+                                  iconData: Icons.no_accounts_sharp),
+                            );
+                          }
+                        },
+                      );
+                    }
+                  },
+                  bgColor:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                          ? Color(0XFFBDBDBD)
+                          : actionBtnColor,
+                  fontColor:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                          ? Colors.black54
+                          : Colors.white,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              // Visit Button
+              Expanded(
+                child: _buildActionButton(
+                  context: context,
+                  size: size,
+                  label: 'Visit',
+                  icon: Icons.login,
+                  isPrimary: false,
+                  onPressed: () {
+                    if ((lastCheckIn == null || //additional line
+                        lastCheckIn!["OutTime"] != null)) {
+                      //additional line
+                    } else {
+                      //additional line
+                      Geolocator.isLocationServiceEnabled()
+                          .then((bool serviceEnabled) {
+                        if (userObj!['Deleted'] == 0) {
+                          if (serviceEnabled) {
+                            Navigator.of(context, rootNavigator: true).push(
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider(
+                                    create: (context) => AppState(),
+                                    child: VisitCapture()),
+                              ),
+                            );
+                          } else {
+                            Geolocator.checkPermission()
+                                .then((LocationPermission permission) {
+                              if (permission == LocationPermission.denied ||
+                                  permission ==
+                                      LocationPermission.deniedForever) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => CustomErrorDialog(
+                                      title: 'Location Service Disabled.',
+                                      message:
+                                          'Please enable location service before trying visit.',
+                                      onOkPressed: () =>
+                                          Navigator.of(context).pop(),
+                                      iconData: Icons.error_outline),
+                                );
+                              } else {
+                                Navigator.of(context, rootNavigator: true).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ChangeNotifierProvider(
+                                      create: (context) => AppState(),
+                                      child: VisitCapture(),
+                                    ),
+                                  ),
+                                );
+                              }
+                            });
+                          }
+                        } else {
+                          //Tell user that his account is deactivated
+                          showDialog(
+                            context: context,
+                            builder: (context) => CustomErrorDialog(
+                                title: 'Inactive User',
+                                message:
+                                    'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
+                                onOkPressed: () => Navigator.of(context).pop(),
+                                iconData: Icons.no_accounts_sharp),
+                          );
+                        }
+                      });
+                    }
+                  },
+                  bgColor:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                          ? Color(0XFFBDBDBD)
+                          : actionBtnColor,
+                  fontColor:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                          ? Colors.black54
+                          : Colors.white,
+                ),
+              ),
+
+              SizedBox(width: 12),
+
+              // Inventory Scan Button
+              Expanded(
+                child: _buildActionButton(
+                  context: context,
+                  size: size,
+                  label: 'Inventory Scan',
+                  icon: Icons.qr_code_scanner,
+                  isPrimary: false,
+                  onPressed: () {
+                    if ((lastCheckIn == null ||
+                        lastCheckIn!["OutTime"] != null)) {
+                    } else {
+                      Geolocator.isLocationServiceEnabled()
+                          .then((bool serviceEnabled) async {
+                        if (userObj!['Deleted'] == 0) {
+                          if (serviceEnabled) {
+                            bool isLocationValid =
+                                await LocationValidationService
+                                    .validateLocationForInventoryScan(context);
+
+                            if (isLocationValid) {
+                              // Navigate to Inventory Scan screen
+                              Navigator.of(context, rootNavigator: true).push(
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        EnhancedBarcodeScannerScreen(
+                                            index: widget.index3)),
+                              );
+                            }
+                          } else {
+                            Geolocator.checkPermission()
+                                .then((LocationPermission permission) {
+                              if (permission == LocationPermission.denied ||
+                                  permission ==
+                                      LocationPermission.deniedForever) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => CustomErrorDialog(
+                                      title: 'Location Service Disabled.',
+                                      message:
+                                          'Please enable location service before trying visit.',
+                                      onOkPressed: () =>
+                                          Navigator.of(context).pop(),
+                                      iconData: Icons.error_outline),
+                                );
+                              }
+                            });
+                          }
+                        } else {
+                          //Tell user that his account is deactivated
+                          showDialog(
+                            context: context,
+                            builder: (context) => CustomErrorDialog(
+                                title: 'Inactive User',
+                                message:
+                                    'This user has been deactivated \nand access to this function is restricted. \nPlease contact the system administrator.',
+                                onOkPressed: () => Navigator.of(context).pop(),
+                                iconData: Icons.no_accounts_sharp),
+                          );
+                        }
+                      });
+                    }
+                  },
+                  bgColor:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                          ? Color(0XFFBDBDBD)
+                          : actionBtnColor,
+                  fontColor:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                          ? Colors.black54
+                          : Colors.white,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Visit Button
+              Expanded(
+                child: _buildActionButton(
+                  context: context,
+                  size: size,
+                  label: 'Inventory GRN',
+                  icon: Icons.numbers,
+                  isPrimary: false,
+                  onPressed: () {},
+                  bgColor:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                          ? Color(0XFFBDBDBD)
+                          : actionBtnColor,
+                  fontColor:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null)
+                          ? Colors.black54
+                          : Colors.white,
+                ),
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required BuildContext context,
+    required Size size,
+    required String label,
+    required IconData icon,
+    required bool isPrimary,
+    required VoidCallback onPressed,
+    required Color bgColor,
+    required Color fontColor,
+  }) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      width: size.width,
+      height: 64,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(
+          icon,
+          size: 22,
+          color: fontColor,
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: Responsive.isMobileSmall(context)
+                ? 14
+                : Responsive.isMobileMedium(context)
+                    ? 16
+                    : Responsive.isMobileLarge(context)
+                        ? 16
+                        : Responsive.isTabletPortrait(context)
+                            ? 18
+                            : 18,
+            fontWeight: FontWeight.w600,
+            color: fontColor,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: bgColor,
+          foregroundColor: fontColor,
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
+    );
   }
 }
