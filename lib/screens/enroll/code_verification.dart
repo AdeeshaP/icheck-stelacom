@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:icheck_stelacom/components/utils/custom_error_dialog.dart';
 import 'package:icheck_stelacom/components/utils/dialogs.dart';
 import 'package:icheck_stelacom/constants.dart';
-import 'package:icheck_stelacom/services/api_service.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/responsive.dart';
 import 'package:icheck_stelacom/screens/enroll/otp_input_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';

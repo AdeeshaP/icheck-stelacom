@@ -11,7 +11,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:icheck_stelacom/services/api_service.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/constants.dart';
 import 'package:icheck_stelacom/main.dart';
 import 'package:icheck_stelacom/providers/appstate_provieder.dart';

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:icheck_stelacom/services/api_service.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
 import '../../components/utils/custom_error_dialog.dart';
 import '../../components/utils/dialogs.dart';
 
@@ -182,7 +182,7 @@ class LocationValidationService {
       builder: (context) => CustomErrorDialog(
         title: 'Error!',
         message:
-            'Inventory Scan is not available from your current location. You are not at the exact location or inside the assigned radius.\n\n$message. Please move to the assigned location.',
+            'Inventory Scan is not available from your current location. You are not at the exact location or inside the assigned radius.\n Please move to the assigned location and try.',
         onOkPressed: () {
           Navigator.of(context).pop();
         },

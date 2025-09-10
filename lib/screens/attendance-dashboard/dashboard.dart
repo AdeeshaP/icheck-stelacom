@@ -3,7 +3,7 @@ import 'package:icheck_stelacom/components/utils/dialogs.dart';
 import 'package:icheck_stelacom/screens/attendance-dashboard/flat_toggle_button.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:icheck_stelacom/services/api_service.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/constants.dart';
 import '../enroll/code_verification.dart';
 import 'package:icheck_stelacom/screens/menu/about_us.dart';

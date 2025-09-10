@@ -3,7 +3,7 @@ import 'package:icheck_stelacom/constants.dart';
 import 'package:icheck_stelacom/screens/leaves_screen/further_leave_details.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:icheck_stelacom/services/api_service.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
 import '../enroll/code_verification.dart';
 import 'package:icheck_stelacom/screens/leaves_screen/leaves.dart';
 import 'package:icheck_stelacom/screens/menu/about_us.dart';

@@ -16,7 +16,7 @@
     </queries>
     <application
          android:usesCleartextTraffic="true"
-        android:label="iCheck Stelacom"
+        android:label="StelacomCheck"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"

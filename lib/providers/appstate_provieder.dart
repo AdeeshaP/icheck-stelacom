@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'package:flutter/material.dart';
 
 class AppState extends ChangeNotifier {
@@ -13,6 +14,7 @@ class AppState extends ChangeNotifier {
   String _customerid = '';
   String _locationAddress = '';
   bool isSupervisor = false;
+  bool isDeactivated = false;
   String _officeAddress = '';
   List<dynamic> individualRequestLeaves = [];
   List<dynamic> groupRequestLeaves = [];
@@ -92,6 +94,16 @@ class AppState extends ChangeNotifier {
 
   void updateOfficeAddress(String newAddress) {
     _officeAddress = newAddress;
+    notifyListeners();
+  }
+
+  void checkIsDeleted(String userData) {
+    Map<String, dynamic> userObj = jsonDecode(userData);
+    if (userObj["Deleted"] == 1) {
+      isDeactivated = true;
+    } else {
+      isDeactivated = false;
+    }
     notifyListeners();
   }
 }

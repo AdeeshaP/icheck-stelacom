@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:icheck_stelacom/constants.dart';
 import '../enroll/code_verification.dart';
-import 'package:icheck_stelacom/services/api_service.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/screens/menu/about_us.dart';
 import 'package:icheck_stelacom/screens/menu/contact_us.dart';
 import 'package:icheck_stelacom/screens/menu/help.dart';

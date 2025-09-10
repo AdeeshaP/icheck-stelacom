@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:icheck_stelacom/screens/attendance-dashboard/dashboard.dart';
 import 'package:icheck_stelacom/constants.dart';
-import 'package:icheck_stelacom/screens/home/dashboard.dart';
+import 'package:icheck_stelacom/screens/home/dashboard_Sample2.dart';
 import 'package:icheck_stelacom/screens/profile/profile_home.dart';
 import 'package:icheck_stelacom/providers/appstate_provieder.dart';
 import 'package:icheck_stelacom/responsive.dart';
@@ -118,8 +118,8 @@ class _HomeScreen extends State<HomeScreen>
       child: Consumer<AppState>(
         builder: (context, appState, child) {
           List homeScreenList = [
-            Dashboard(index3: widget.index2),
-            // ModernDashboard(index3: widget.index2),
+            // Dashboard(index3: widget.index2),
+            ModifiedDashboard(index3: widget.index2),
             AttendacneDashboardScreen(
               user: userObj,
               index3: widget.index2,

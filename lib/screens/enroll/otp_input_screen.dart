@@ -4,7 +4,7 @@ import 'package:icheck_stelacom/components/utils/custom_error_dialog.dart';
 import 'package:icheck_stelacom/components/utils/dialogs.dart';
 import 'package:icheck_stelacom/constants.dart';
 import '../enroll/code_verification.dart';
-import 'package:icheck_stelacom/services/api_service.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/responsive.dart';
 import 'package:icheck_stelacom/screens/enroll/enroll_user.dart';
 import 'package:icheck_stelacom/screens/home/first_screen.dart';
@@ -90,9 +90,11 @@ class _OTPInputSreenState extends State<OTPInputSreen> {
     } else {
       print("OTP Response body ${response.body}");
 
-      _storage.setString('user_data', response.body);
       Map<String, dynamic> userObj = jsonDecode(response.body);
+
       if (userObj["enrolled"] == 'done') {
+        await _storage.setString('user_data', response.body);
+
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => HomeScreen(index2: 0),
@@ -189,7 +191,7 @@ class _OTPInputSreenState extends State<OTPInputSreen> {
                   (index) => SizedBox(
                     width: 40,
                     child: TextField(
-                      cursorColor: actionBtnColor, 
+                      cursorColor: actionBtnColor,
                       style: TextStyle(
                         fontSize: Responsive.isMobileSmall(context)
                             ? 17

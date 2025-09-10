@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:icheck_stelacom/services/api_service.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/screens/menu/about_us.dart';
 import 'package:icheck_stelacom/screens/menu/contact_us.dart';
 import 'package:icheck_stelacom/screens/menu/help.dart';

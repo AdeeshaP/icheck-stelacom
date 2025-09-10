@@ -1,743 +1,1319 @@
-// import 'dart:async';
-// import 'package:flutter/material.dart';
-// import 'package:jiffy/jiffy.dart';
+import 'dart:async';
+import 'package:icheck_stelacom/screens/Inventroy-Scan/enhanced_barcode2.dart';
+import 'package:icheck_stelacom/app-services/api_service.dart';
+import 'package:icheck_stelacom/main.dart';
+import 'package:icheck_stelacom/screens/Visits/capture_screen.dart';
+import 'package:icheck_stelacom/screens/checkin-checkout/checkin_capture_screen.dart';
+import 'package:icheck_stelacom/screens/checkin-checkout/checkout_capture_screen.dart';
+import 'package:icheck_stelacom/app-services/location_service.dart';
+import 'package:icheck_stelacom/screens/inventory-GRN/grn_screen.dart';
+import '../enroll/code_verification.dart';
+import 'package:icheck_stelacom/constants.dart';
+import 'package:icheck_stelacom/screens/location_restrictions/location_restrictions.dart';
+import 'package:icheck_stelacom/screens/menu/contact_us.dart';
+import 'package:icheck_stelacom/screens/menu/help.dart';
+import 'package:icheck_stelacom/providers/appstate_provieder.dart';
+import 'package:icheck_stelacom/providers/loxcation_provider.dart';
+import 'package:icheck_stelacom/responsive.dart';
+import 'package:flutter/material.dart';
+import 'package:icheck_stelacom/screens/menu/about_us.dart';
+import 'package:icheck_stelacom/screens/menu/terms_conditions.dart';
+import '../../components/utils/custom_error_dialog.dart';
+import '../../components/utils/dialogs.dart';
+import 'package:flutter/services.dart';
+import 'package:jiffy/jiffy.dart';
+import 'package:new_version_plus/new_version_plus.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:app_version_update/app_version_update.dart';
 
-// class ModernDashboard extends StatefulWidget {
-//   ModernDashboard({super.key, required this.index3});
+class ModifiedDashboard extends StatefulWidget {
+  ModifiedDashboard({super.key, required this.index3});
 
-//   final int index3;
-//   @override
-//   State<ModernDashboard> createState() => _ModernDashboardState();
-// }
+  final int index3;
+  @override
+  State<ModifiedDashboard> createState() => _ModifiedDashboardState();
+}
 
-// class _ModernDashboardState extends State<ModernDashboard>
-//     with TickerProviderStateMixin {
-//   // Sample data - replace with your actual data
-//   Map<String, dynamic>? userObj = {
-//     'FirstName': 'Adeesha',
-//     'LastName': 'Perera',
-//     'ProfileImage':
-//         'https://0830s3gvuh.execute-api.us-east-2.amazonaws.com/dev/services-file?bucket=icheckfaceimages&image=adfc4027-484f-4a7a-9f28-fa8e824bc129_TEST022_CAP841000192460763151.jpg',
-//     'OfficeAddress': '410/118 Bauddhaloka Mawatha, Colombo 00700'
-//   };
+class _ModifiedDashboardState extends State<ModifiedDashboard>
+    with WidgetsBindingObserver, TickerProviderStateMixin {
+  late SharedPreferences _storage;
+  Map<String, dynamic>? userObj;
+  Map<String, dynamic>? lastCheckIn;
+  String workedTime = "";
+  late DateTime? lastCheckInTime;
+  String employeeCode = "";
+  VersionStatus? versionstatus;
+  DateTime? NOTIFCATION_POPUP_DISPLAY_TIME;
+  String inTime = "";
+  String outTime = "";
+  String attendanceId = "";
+  final GlobalKey<NavigatorState> firstTabNavKey = GlobalKey<NavigatorState>();
+  late AppState appState;
+  String formattedDuration = "";
+  String formattedDate = "";
+  String formattedInTime = "";
+  String formattedOutTime = "";
+  late AnimationController _pulseController;
+  late AnimationController _buttonController;
 
-//   Map<String, dynamic>? lastCheckIn;
-//   String workedTime = "Not checked in yet";
-//   String currentTime = "";
-//   String currentDate = "";
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
 
-//   late AnimationController _pulseController;
-//   late AnimationController _buttonController;
-//   Timer? _timeTimer;
-//   Timer? _workTimeTimer;
+  @override
+  void initState() {
+    super.initState();
+    appState = Provider.of<AppState>(context, listen: false);
 
-//   @override
-//   void initState() {
-//     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    getSharedPrefs();
 
-//     _pulseController = AnimationController(
-//       duration: Duration(milliseconds: 1500),
-//       vsync: this,
-//     )..repeat(reverse: true);
+    Timer.periodic(Duration(milliseconds: 200), (timer) {
+      appState.updateOfficeDate(
+          Jiffy.now().format(pattern: "EEEE") + ", " + Jiffy.now().yMMMMd);
+      appState.updateOfficeTime(Jiffy.now().format(pattern: "hh:mm:ss a"));
+    });
 
-//     _buttonController = AnimationController(
-//       duration: Duration(milliseconds: 300),
-//       vsync: this,
-//     );
+    Timer.periodic(Duration(seconds: 1), (timer) {
+      updateWorkTime();
+    });
 
-//     // Update time every 200ms like in your original code
-//     _timeTimer = Timer.periodic(Duration(milliseconds: 200), (timer) {
-//       if (mounted) {
-//         setState(() {
-//           currentDate =
-//               Jiffy.now().format(pattern: "EEEE") + ", " + Jiffy.now().yMMMMd;
-//           currentTime = Jiffy.now().format(pattern: "hh:mm:ss a");
-//         });
-//       }
-//     });
+    _pulseController = AnimationController(
+      duration: Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
 
-//     // Update work time every second
-//     _workTimeTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-//       updateWorkTime();
-//     });
-//   }
+    _buttonController = AnimationController(
+      duration: Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
 
-//   @override
-//   void dispose() {
-//     _pulseController.dispose();
-//     _buttonController.dispose();
-//     _timeTimer?.cancel();
-//     _workTimeTimer?.cancel();
-//     super.dispose();
-//   }
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pulseController.dispose();
+    _buttonController.dispose();
+    super.dispose();
+  }
 
-//   bool get isCheckedIn =>
-//       lastCheckIn != null && lastCheckIn!["OutTime"] == null;
+  Future<void> getSharedPrefs() async {
+    await getVersionStatus();
 
-//   void updateWorkTime() {
-//     if (lastCheckIn != null && lastCheckIn!["OutTime"] == null) {
-//       DateTime lastCheckInTime = DateTime.parse(lastCheckIn!["InTime"]);
-//       Duration duration = DateTime.now().difference(lastCheckInTime);
+    _storage = await SharedPreferences.getInstance();
+    String? userData = await _storage.getString('user_data');
+    employeeCode = await _storage.getString('employee_code') ?? "";
 
-//       if (mounted) {
-//         setState(() {
-//           String twoDigits(int n) => n.toString().padLeft(2, "0");
-//           String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-//           String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-//           workedTime =
-//               "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
-//         });
-//       }
-//     } else {
-//       if (mounted) {
-//         setState(() {
-//           workedTime = "Not checked in yet";
-//         });
-//       }
-//     }
-//   }
+    // if (userData == null) {
+    //   await loadUserData();
+    // } else {
+    userObj = jsonDecode(userData!);
 
-//   // Mock check-in function - replace with your actual API calls
-//   void _handleCheckIn() {
-//     setState(() {
-//       lastCheckIn = {
-//         "InTime": DateTime.now().toIso8601String(),
-//         "OutTime": null,
-//       };
-//     });
-//     _buttonController.forward();
-//   }
+    if (mounted) appState.updateOfficeAddress(userObj!["OfficeAddress"]);
 
-//   void _handleCheckOut() {
-//     setState(() {
-//       lastCheckIn!["OutTime"] = DateTime.now().toIso8601String();
-//     });
-//     _buttonController.reverse();
-//   }
+    if (mounted) {
+      appState.checkIsDeleted(userData);
+    }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     Size size = MediaQuery.of(context).size;
+    await loadLastCheckIn();
+    // }
 
-//     return Scaffold(
-//       backgroundColor: Color(0xFFF5F7FA),
-//       appBar: _buildAppBar(size),
-//       body: SingleChildScrollView(
-//         child: Column(
-//           children: [
-//             _buildTimeCard(size),
-//             SizedBox(height: 24),
-//             _buildActionButtons(size),
-//             SizedBox(height: 24),
-//             _buildWorkTimeCard(size),
-//             SizedBox(height: 24),
-//             _buildProfileCard(size),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
+    if (versionstatus != null) {
+      Future.delayed(Duration(seconds: 2), () async {
+        _verifyVersion();
+      });
+    }
+  }
 
-//   PreferredSizeWidget _buildAppBar(Size size) {
-//     return AppBar(
-//       backgroundColor: Colors.white,
-//       elevation: 2,
-//       shadowColor: Colors.grey.withOpacity(0.1),
-//       toolbarHeight: 70,
-//       automaticallyImplyLeading: false,
-//       title: Row(
-//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//         children: [
-//           // iCheck Logo
-//           Container(
-//             child: Row(
-//               children: [
-//                 Container(
-//                   padding: EdgeInsets.all(8),
-//                   decoration: BoxDecoration(
-//                     color: Color(0xFFFF8C00).withOpacity(0.1),
-//                     borderRadius: BorderRadius.circular(8),
-//                   ),
-//                   child: Icon(
-//                     Icons.location_on,
-//                     color: Color(0xFFFF8C00),
-//                     size: 20,
-//                   ),
-//                 ),
-//                 SizedBox(width: 8),
-//                 Text(
-//                   'iCheck',
-//                   style: TextStyle(
-//                     color: Color(0xFF2D3748),
-//                     fontWeight: FontWeight.bold,
-//                     fontSize: 20,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
+// --------GET App Version Status--------------//
+  Future<VersionStatus> getVersionStatus() async {
+    NewVersionPlus? newVersion =
+        NewVersionPlus(androidId: "com.aura.icheckapp");
 
-//           // Company Logo
-//           Container(
-//             width: 100,
-//             height: 40,
-//             child: userObj != null
-//                 ? Image.network(
-//                     'https://0830s3gvuh.execute-api.us-east-2.amazonaws.com/dev/services-file?bucket=icheckmisc&image=1_STL_123.png',
-//                     fit: BoxFit.contain,
-//                     errorBuilder: (context, error, stackTrace) {
-//                       return Container(
-//                         decoration: BoxDecoration(
-//                           color: Color(0xFFFF8C00).withOpacity(0.1),
-//                           borderRadius: BorderRadius.circular(8),
-//                         ),
-//                         child: Icon(Icons.business, color: Color(0xFFFF8C00)),
-//                       );
-//                     },
-//                   )
-//                 : Container(),
-//           ),
-//         ],
-//       ),
-//       actions: [
-//         PopupMenuButton<String>(
-//           icon: Icon(Icons.more_vert, color: Color(0xFF2D3748)),
-//           onSelected: (String choice) {
-//             // Handle menu selection - connect to your choiceAction method
-//             print('Selected: $choice');
-//           },
-//           itemBuilder: (BuildContext context) {
-//             return ['Help', 'About Us', 'Contact Us', 'T & C', 'Log Out']
-//                 .map((String choice) {
-//               return PopupMenuItem<String>(
-//                 value: choice,
-//                 child: Text(choice),
-//               );
-//             }).toList();
-//           },
-//         ),
-//       ],
-//     );
-//   }
+    VersionStatus? status = await newVersion.getVersionStatus();
+    setState(() {
+      versionstatus = status;
+    });
+    print(newVersion);
 
-//   Widget _buildTimeCard(Size size) {
-//     return Container(
-//       width: size.width * 0.9,
-//       margin: EdgeInsets.only(top: 20),
-//       padding: EdgeInsets.all(24),
-//       decoration: BoxDecoration(
-//         gradient: LinearGradient(
-//           begin: Alignment.topLeft,
-//           end: Alignment.bottomRight,
-//           colors: [Colors.white, Color(0xFFFAFAFA)],
-//         ),
-//         borderRadius: BorderRadius.circular(20),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.08),
-//             blurRadius: 20,
-//             offset: Offset(0, 4),
-//           ),
-//         ],
-//       ),
-//       child: Column(
-//         children: [
-//           // Status Indicator
-//           Row(
-//             mainAxisAlignment: MainAxisAlignment.center,
-//             children: [
-//               AnimatedBuilder(
-//                 animation: _pulseController,
-//                 builder: (context, child) {
-//                   return Container(
-//                     width: 12,
-//                     height: 12,
-//                     decoration: BoxDecoration(
-//                       color: isCheckedIn
-//                           ? Color(0xFF10B981)
-//                               .withOpacity(0.5 + 0.5 * _pulseController.value)
-//                           : Color(0xFF6B7280),
-//                       shape: BoxShape.circle,
-//                     ),
-//                   );
-//                 },
-//               ),
-//               SizedBox(width: 8),
-//               Text(
-//                 isCheckedIn ? 'Checked In' : 'Ready to Check In',
-//                 style: TextStyle(
-//                   color: isCheckedIn ? Color(0xFF10B981) : Color(0xFF6B7280),
-//                   fontWeight: FontWeight.w600,
-//                   fontSize: 16,
-//                 ),
-//               ),
-//             ],
-//           ),
+    // if (versionstatus != null) {
+    return versionstatus!;
+    // }
+  }
 
-//           SizedBox(height: 16),
+  // SIDE MENU BAR UI
+  List<String> _menuOptions = [
+    'Help',
+    'About Us',
+    'Contact Us',
+    'T & C',
+    'Log Out'
+  ];
 
-//           // Current Time
-//           Text(
-//             currentTime,
-//             style: TextStyle(
-//               fontSize: 42,
-//               fontWeight: FontWeight.w300,
-//               color: Color(0xFFFF8C00),
-//               letterSpacing: 1.5,
-//             ),
-//           ),
+  // --------- Side Menu Bar Navigation ---------- //
+  void choiceAction(String choice) {
+    if (choice == _menuOptions[0]) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) {
+          return HelpScreen(
+            index3: 0,
+          );
+        }),
+      );
+    } else if (choice == _menuOptions[1]) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) {
+          return AboutUs(
+            index3: 0,
+          );
+        }),
+      );
+    } else if (choice == _menuOptions[2]) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) {
+          return ContactUs(
+            index3: 0,
+          );
+        }),
+      );
+    } else if (choice == _menuOptions[3]) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) {
+          return TermsAndConditions(
+            index3: 0,
+          );
+        }),
+      );
+    } else if (choice == _menuOptions[4]) {
+      if (!mounted)
+        return;
+      else {
+        _storage.clear();
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => CodeVerificationScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
 
-//           SizedBox(height: 8),
+  // VERSION UPDATE
 
-//           // Current Date
-//           Text(
-//             currentDate,
-//             style: TextStyle(
-//               fontSize: 16,
-//               color: Color(0xFF64748B),
-//               fontWeight: FontWeight.w500,
-//             ),
-//           ),
+  Future<void> _verifyVersion() async {
+    AppVersionUpdate.checkForUpdates(
+      appleId: '1581265618',
+      playStoreId: 'com.aura.icheckapp',
+      country: 'us',
+    ).then(
+      (result) async {
+        if (result.canUpdate!) {
+          await AppVersionUpdate.showAlertUpdate(
+            appVersionResult: result,
+            context: context,
+            backgroundColor: Colors.grey[100],
+            title: '      Update Available',
+            titleTextStyle: TextStyle(
+              color: normalTextColor,
+              fontWeight: FontWeight.w600,
+              fontSize: Responsive.isMobileSmall(context) ||
+                      Responsive.isMobileMedium(context) ||
+                      Responsive.isMobileLarge(context)
+                  ? 24
+                  : Responsive.isTabletPortrait(context)
+                      ? 28
+                      : 27,
+            ),
+            content:
+                "You're currently using iCheck ${versionstatus!.localVersion}, but new version ${result.storeVersion} is now available on the Play Store. Update now for the latest features!",
+            contentTextStyle: TextStyle(
+                color: normalTextColor,
+                fontWeight: FontWeight.w400,
+                fontSize: Responsive.isMobileSmall(context) ||
+                        Responsive.isMobileMedium(context) ||
+                        Responsive.isMobileLarge(context)
+                    ? 16
+                    : Responsive.isTabletPortrait(context)
+                        ? 25
+                        : 24,
+                height: 1.5),
+            updateButtonText: 'UPDATE',
+            updateTextStyle: TextStyle(
+              fontSize: Responsive.isMobileSmall(context)
+                  ? 14
+                  : Responsive.isMobileMedium(context) ||
+                          Responsive.isMobileLarge(context)
+                      ? 16
+                      : Responsive.isTabletPortrait(context)
+                          ? 18
+                          : 18,
+            ),
+            updateButtonStyle: ButtonStyle(
+                foregroundColor: WidgetStateProperty.all(actionBtnTextColor),
+                backgroundColor: WidgetStateProperty.all(Colors.green[800]),
+                minimumSize: Responsive.isMobileSmall(context)
+                    ? WidgetStateProperty.all(Size(90, 40))
+                    : Responsive.isMobileMedium(context) ||
+                            Responsive.isMobileLarge(context)
+                        ? WidgetStateProperty.all(Size(100, 45))
+                        : Responsive.isTabletPortrait(context)
+                            ? WidgetStateProperty.all(Size(160, 60))
+                            : WidgetStateProperty.all(Size(140, 50)),
+                shape: WidgetStateProperty.all(
+                  RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(0)),
+                )),
+            cancelButtonText: 'NO THANKS',
+            cancelButtonStyle: ButtonStyle(
+                foregroundColor: WidgetStateProperty.all(actionBtnTextColor),
+                backgroundColor: WidgetStateProperty.all(Colors.red[800]),
+                minimumSize: Responsive.isMobileSmall(context)
+                    ? WidgetStateProperty.all(Size(90, 40))
+                    : Responsive.isMobileMedium(context) ||
+                            Responsive.isMobileLarge(context)
+                        ? WidgetStateProperty.all(Size(100, 45))
+                        : Responsive.isTabletPortrait(context)
+                            ? WidgetStateProperty.all(Size(160, 60))
+                            : WidgetStateProperty.all(Size(140, 50)),
+                shape: WidgetStateProperty.all(
+                  RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(0)),
+                )),
+            cancelTextStyle: TextStyle(
+              fontSize: Responsive.isMobileSmall(context)
+                  ? 14
+                  : Responsive.isMobileMedium(context) ||
+                          Responsive.isMobileLarge(context)
+                      ? 16
+                      : Responsive.isTabletPortrait(context)
+                          ? 18
+                          : 18,
+            ),
+          );
+        }
+      },
+    );
+  }
 
-//           SizedBox(height: 16),
+  // MOVE TO TURN ON DEVICE LOCATION
 
-//           // Office Address
-//           Container(
-//             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//             decoration: BoxDecoration(
-//               color: Color(0xFFFF8C00).withOpacity(0.08),
-//               borderRadius: BorderRadius.circular(12),
-//             ),
-//             child: Row(
-//               mainAxisSize: MainAxisSize.min,
-//               children: [
-//                 Icon(
-//                   Icons.location_on_outlined,
-//                   size: 16,
-//                   color: Color(0xFFFF8C00),
-//                 ),
-//                 SizedBox(width: 8),
-//                 Flexible(
-//                   child: Text(
-//                     userObj?['OfficeAddress'] ?? '',
-//                     style: TextStyle(
-//                       fontSize: 12,
-//                       color: Color(0xFF64748B),
-//                       fontWeight: FontWeight.w500,
-//                     ),
-//                     textAlign: TextAlign.center,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
+  void switchOnLocation() async {
+    closeDialog(context);
+    bool ison = await Geolocator.isLocationServiceEnabled();
+    if (!ison) {
+      await Geolocator.openLocationSettings();
+    }
+  }
 
-//   Widget _buildActionButtons(Size size) {
-//     return Padding(
-//       padding: EdgeInsets.symmetric(horizontal: 24),
-//       child: Column(
-//         children: [
-//           Row(
-//             children: [
-//               Expanded(
-//                 child: _buildActionButton(
-//                   context: context,
-//                   size: size,
-//                   label: 'Check In',
-//                   icon: Icons.login,
-//                   isEnabled: !isCheckedIn,
-//                   isPrimary: true,
-//                   onPressed: _handleCheckIn,
-//                 ),
-//               ),
+  bool get isCheckedIn =>
+      lastCheckIn != null && lastCheckIn!["OutTime"] == null;
 
-//               SizedBox(width: 12),
+  // Update your main build method to use the new widgets:
+  @override
+  Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
 
-//               // Check Out Button
-//               Expanded(
-//                 child: _buildActionButton(
-//                   context: context,
-//                   size: size,
-//                   label: 'Check Out',
-//                   icon: Icons.logout,
-//                   isEnabled: isCheckedIn,
-//                   isPrimary: false,
-//                   onPressed: _handleCheckOut,
-//                 ),
-//               ),
-//             ],
-//           ),
-//           SizedBox(height: 12),
-//           Row(
-//             children: [
-//               // Visit Button
-//               Expanded(
-//                 child: _buildActionButton(
-//                   context: context,
-//                   size: size,
-//                   label: 'Visit',
-//                   icon: Icons.visibility,
-//                   isEnabled: isCheckedIn,
-//                   isPrimary: false,
-//                   onPressed: () => _showSnackBar('Visit functionality'),
-//                 ),
-//               ),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        SystemNavigator.pop();
+      },
+      child: Consumer<AppState>(
+        builder: (context, appState, child) {
+          return Scaffold(
+            key: firstTabNavKey,
+            backgroundColor: screenbgcolor,
+            appBar: AppBar(
+              // Your existing AppBar code
+              backgroundColor: appbarBgColor,
+              shadowColor: Colors.grey[100],
+              toolbarHeight: Responsive.isMobileSmall(context) ||
+                      Responsive.isMobileMedium(context) ||
+                      Responsive.isMobileLarge(context)
+                  ? 40
+                  : Responsive.isTabletPortrait(context)
+                      ? 80
+                      : 90,
+              automaticallyImplyLeading: false,
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Your existing title row code
+                  SizedBox(
+                    width: Responsive.isMobileSmall(context) ||
+                            Responsive.isMobileMedium(context) ||
+                            Responsive.isMobileLarge(context)
+                        ? 90.0
+                        : Responsive.isTabletPortrait(context)
+                            ? 150
+                            : 170,
+                    height: Responsive.isMobileSmall(context) ||
+                            Responsive.isMobileMedium(context) ||
+                            Responsive.isMobileLarge(context)
+                        ? 40.0
+                        : Responsive.isTabletPortrait(context)
+                            ? 120
+                            : 100,
+                    child: Image.asset(
+                      'assets/images/iCheck_logo_2024.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  SizedBox(width: size.width * 0.25),
+                  SizedBox(
+                    width: Responsive.isMobileSmall(context) ||
+                            Responsive.isMobileMedium(context) ||
+                            Responsive.isMobileLarge(context)
+                        ? 90.0
+                        : Responsive.isTabletPortrait(context)
+                            ? 150
+                            : 170,
+                    height: Responsive.isMobileSmall(context) ||
+                            Responsive.isMobileMedium(context) ||
+                            Responsive.isMobileLarge(context)
+                        ? 40.0
+                        : Responsive.isTabletPortrait(context)
+                            ? 120
+                            : 100,
+                    child: userObj != null
+                        ? CachedNetworkImage(
+                            imageUrl: userObj!['CompanyProfileImage'],
+                            placeholder: (context, url) => Text("..."),
+                            errorWidget: (context, url, error) =>
+                                Icon(Icons.error),
+                          )
+                        : Text(""),
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                PopupMenuButton<String>(
+                  onSelected: choiceAction,
+                  itemBuilder: (BuildContext context) {
+                    return _menuOptions.map((String choice) {
+                      return PopupMenuItem<String>(
+                        value: choice,
+                        child: Text(
+                          choice,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: Responsive.isMobileSmall(context)
+                                ? 15
+                                : Responsive.isMobileMedium(context) ||
+                                        Responsive.isMobileLarge(context)
+                                    ? 17
+                                    : Responsive.isTabletPortrait(context)
+                                        ? size.width * 0.025
+                                        : size.width * 0.018,
+                          ),
+                        ),
+                      );
+                    }).toList();
+                  },
+                )
+              ],
+            ),
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildWelcomeSection(size), // New welcome section
+                  SizedBox(height: 24),
+                  _buildActionButtons(size), // Redesigned action buttons
+                  SizedBox(height: 24),
+                  _buildWorkTimeCard(size), // Keep existing work time card
+                  SizedBox(height: 24),
+                  _buildProfileCard(
+                      size, isCheckedIn), // Keep existing profile card
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-//               SizedBox(width: 12),
+// Remove the time card entirely and replace with a cleaner welcome section
+  Widget _buildWelcomeSection(Size size) {
+    return Container(
+      width: size.width * 0.9,
+      margin: EdgeInsets.only(top: 20),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFF8C00).withOpacity(0.1),
+            Color(0xFFFF8C00).withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Color(0xFFFF8C00).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Color(0xFFFF8C00),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFFFF8C00).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.business_center,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userObj != null
+                      ? userObj!['LastName'] != null
+                          ? 'Welcome, ${userObj!["FirstName"]}!'
+                          : 'Welcome!'
+                      : "Welcome!",
+                  style: TextStyle(
+                    fontSize: Responsive.isMobileSmall(context)
+                        ? 20
+                        : Responsive.isMobileMedium(context) ||
+                                Responsive.isMobileLarge(context)
+                            ? 22
+                            : Responsive.isTabletPortrait(context)
+                                ? 26
+                                : 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Ready to manage your work day?',
+                  style: TextStyle(
+                    fontSize: Responsive.isMobileSmall(context)
+                        ? 14
+                        : Responsive.isMobileMedium(context) ||
+                                Responsive.isMobileLarge(context)
+                            ? 16
+                            : Responsive.isTabletPortrait(context)
+                                ? 18
+                                : 20,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-//               // Inventory Scan Button
-//               Expanded(
-//                 child: _buildActionButton(
-//                   context: context,
-//                   size: size,
-//                   label: 'Inventory Scan',
-//                   icon: Icons.qr_code_scanner,
-//                   isEnabled: isCheckedIn,
-//                   isPrimary: false,
-//                   onPressed: () => _showSnackBar('Inventory scan functionality'),
-//                 ),
-//               ),
-//             ],
-//           )
-//         ],
-//       ),
-//     );
-//   }
+// Redesigned action buttons with better layout (2x2 grid + 1 bottom button)
+  Widget _buildActionButtons(Size size) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          // Top row - Main actions (Check In/Out)
+          Row(
+            children: [
+              Expanded(
+                child: _buildSecondaryActionButton(
+                  context: context,
+                  size: size,
+                  label: 'Check In',
+                  icon: Icons.login_outlined,
+                  isEnabled:
+                      (lastCheckIn == null || lastCheckIn!["OutTime"] != null),
+                  onPressed: () {
+                    if (lastCheckIn == null ||
+                        lastCheckIn!["OutTime"] != null) {
+                      _handleCheckIn();
+                    }
+                  },
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _buildSecondaryActionButton(
+                  context: context,
+                  size: size,
+                  label: 'Check Out',
+                  icon: Icons.logout_outlined,
+                  isEnabled:
+                      (lastCheckIn != null && lastCheckIn!["OutTime"] == null),
+                  onPressed: () {
+                    if (lastCheckIn != null &&
+                        lastCheckIn!["OutTime"] == null) {
+                      _handleCheckOut();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
 
-//   Widget _buildActionButton({
-//     required BuildContext context,
-//     required Size size,
-//     required String label,
-//     required IconData icon,
-//     required bool isEnabled,
-//     required bool isPrimary,
-//     required VoidCallback onPressed,
-//   }) {
-//     return AnimatedContainer(
-//       duration: Duration(milliseconds: 300),
-//       width: size.width,
-//       height: 64,
-//       child: ElevatedButton.icon(
-//         onPressed: isEnabled ? onPressed : null,
-//         icon: Icon(
-//           icon,
-//           size: 22,
-//           color: isEnabled ? Colors.white : Colors.black54,
-//         ),
-//         label: Text(
-//           label,
-//           style: TextStyle(
-//             fontSize: 16,
-//             fontWeight: FontWeight.w600,
-//             color: isEnabled ? Colors.white : Colors.black54,
-//           ),
-//         ),
-//         style: ElevatedButton.styleFrom(
-//           backgroundColor: isEnabled
-//               ? (isPrimary ? Color(0xFFFF8C00) : Color(0xFFFF8C00))
-//               : Color(0xFFBDBDBD),
-//           foregroundColor: isEnabled ? Colors.white : Colors.black54,
-//           elevation: isEnabled ? 6 : 1,
-//           shadowColor: isEnabled
-//               ? Color(0xFFFF8C00).withOpacity(0.3)
-//               : Colors.grey.withOpacity(0.1),
-//           shape: RoundedRectangleBorder(
-//             borderRadius: BorderRadius.circular(16),
-//           ),
-//           padding: EdgeInsets.symmetric(vertical: 16),
-//         ),
-//       ),
-//     );
-//   }
+          SizedBox(height: 16),
 
-//   Widget _buildWorkTimeCard(Size size) {
-//     return Container(
-//       width: size.width * 0.9,
-//       padding: EdgeInsets.all(20),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(16),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.05),
-//             blurRadius: 15,
-//             offset: Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Row(
-//         children: [
-//           // Work Time Icon
-//           Container(
-//             padding: EdgeInsets.all(12),
-//             decoration: BoxDecoration(
-//               gradient: LinearGradient(
-//                 colors: isCheckedIn
-//                     ? [Color(0xFFFF8C00), Color(0xFFFFB347)]
-//                     : [Color(0xFF9CA3AF), Color(0xFF6B7280)],
-//               ),
-//               borderRadius: BorderRadius.circular(12),
-//               boxShadow: [
-//                 BoxShadow(
-//                   color: (isCheckedIn ? Color(0xFFFF8C00) : Color(0xFF9CA3AF))
-//                       .withOpacity(0.3),
-//                   blurRadius: 8,
-//                   offset: Offset(0, 2),
-//                 ),
-//               ],
-//             ),
-//             child: Icon(
-//               Icons.access_time,
-//               color: Colors.white,
-//               size: 24,
-//             ),
-//           ),
+          // Middle row - Secondary actions
+          Row(
+            children: [
+              Expanded(
+                child: _buildSecondaryActionButton(
+                  context: context,
+                  size: size,
+                  label: 'Visit',
+                  icon: Icons.location_on_outlined,
+                  isEnabled:
+                      (lastCheckIn != null && lastCheckIn!["OutTime"] == null),
+                  onPressed: () {
+                    if (lastCheckIn != null &&
+                        lastCheckIn!["OutTime"] == null) {
+                      _handleVisit();
+                    }
+                  },
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _buildSecondaryActionButton(
+                  context: context,
+                  size: size,
+                  label: 'Inventory Scan',
+                  icon: Icons.qr_code_scanner_outlined,
+                  isEnabled:
+                      (lastCheckIn != null && lastCheckIn!["OutTime"] == null),
+                  onPressed: () {
+                    if (lastCheckIn != null &&
+                        lastCheckIn!["OutTime"] == null) {
+                      _handleInventoryScan();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
 
-//           SizedBox(width: 16),
+          SizedBox(height: 16),
 
-//           // Work Time Info
-//           Expanded(
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 Text(
-//                   'Work Time',
-//                   style: TextStyle(
-//                     fontSize: 14,
-//                     color: Color(0xFF64748B),
-//                     fontWeight: FontWeight.w500,
-//                   ),
-//                 ),
-//                 SizedBox(height: 4),
-//                 AnimatedDefaultTextStyle(
-//                   duration: Duration(milliseconds: 300),
-//                   style: TextStyle(
-//                     fontSize: workedTime == "Not checked in yet" ? 16 : 24,
-//                     fontWeight: FontWeight.bold,
-//                     color: isCheckedIn ? Color(0xFFFF8C00) : Color(0xFF9CA3AF),
-//                     letterSpacing: workedTime == "Not checked in yet" ? 0 : 1,
-//                   ),
-//                   child: Text(workedTime),
-//                 ),
-//               ],
-//             ),
-//           ),
+          // Bottom row - Additional action (centered, smaller width)
+          Container(
+            width: size.width * 0.6,
+            child: _buildSecondaryActionButton(
+              context: context,
+              size: size,
+              label: 'Inventory GRN',
+              icon: Icons.inventory_outlined,
+              isEnabled:
+                  (lastCheckIn != null && lastCheckIn!["OutTime"] == null),
+              onPressed: () {
+                // Handle GRN action
+                _handleInventoryGRN();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-//           // Status Badge
-//           if (isCheckedIn)
-//             Container(
-//               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-//               decoration: BoxDecoration(
-//                 color: Color(0xFF10B981).withOpacity(0.1),
-//                 borderRadius: BorderRadius.circular(20),
-//                 border: Border.all(
-//                   color: Color(0xFF10B981).withOpacity(0.3),
-//                 ),
-//               ),
-//               child: Row(
-//                 mainAxisSize: MainAxisSize.min,
-//                 children: [
-//                   Container(
-//                     width: 6,
-//                     height: 6,
-//                     decoration: BoxDecoration(
-//                       color: Color(0xFF10B981),
-//                       shape: BoxShape.circle,
-//                     ),
-//                   ),
-//                   SizedBox(width: 6),
-//                   Text(
-//                     'Active',
-//                     style: TextStyle(
-//                       color: Color(0xFF10B981),
-//                       fontSize: 12,
-//                       fontWeight: FontWeight.w600,
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//         ],
-//       ),
-//     );
-//   }
+// Secondary action buttons with lighter design
+  Widget _buildSecondaryActionButton({
+    required BuildContext context,
+    required Size size,
+    required String label,
+    required IconData icon,
+    required bool isEnabled,
+    required VoidCallback onPressed,
+  }) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 200),
+      height: 64,
+      child: ElevatedButton.icon(
+        onPressed: isEnabled ? onPressed : null,
+        icon: Icon(
+          icon,
+          size: 22,
+          color: isEnabled ? Colors.white : Colors.grey[400],
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: Responsive.isMobileSmall(context)
+                ? 14
+                : Responsive.isMobileMedium(context)
+                    ? 16
+                    : Responsive.isMobileLarge(context)
+                        ? 16
+                        : Responsive.isTabletPortrait(context)
+                            ? 18
+                            : 18,
+            fontWeight: FontWeight.w600,
+            color: isEnabled ? Colors.white : Colors.grey[400],
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isEnabled ? Color(0xFFFF8C00) : Colors.grey[300],
+          foregroundColor: isEnabled ? Colors.white : Colors.grey[400],
+          elevation: 0,
+          side: BorderSide(
+            color: isEnabled
+                ? Color(0xFFFF8C00).withOpacity(0.3)
+                : Colors.grey[300]!,
+            width: 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
+    );
+  }
 
-//   Widget _buildProfileCard(Size size) {
-//     return Container(
-//       width: size.width * 0.9,
-//       padding: EdgeInsets.all(24),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(16),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.05),
-//             blurRadius: 15,
-//             offset: Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Row(
-//         children: [
-//           // Profile Image with Status Ring
-//           Stack(
-//             children: [
-//               Container(
-//                 width: 64,
-//                 height: 64,
-//                 decoration: BoxDecoration(
-//                   shape: BoxShape.circle,
-//                   border: Border.all(
-//                     color: isCheckedIn ? Color(0xFF10B981) : Color(0xFF9CA3AF),
-//                     width: 3,
-//                   ),
-//                   boxShadow: [
-//                     BoxShadow(
-//                       color:
-//                           (isCheckedIn ? Color(0xFF10B981) : Color(0xFF9CA3AF))
-//                               .withOpacity(0.3),
-//                       blurRadius: 12,
-//                       offset: Offset(0, 4),
-//                     ),
-//                   ],
-//                 ),
-//                 child: ClipOval(
-//                   child: userObj != null && userObj!["ProfileImage"] != null
-//                       ? Image.network(
-//                           userObj!["ProfileImage"],
-//                           width: 64,
-//                           height: 64,
-//                           fit: BoxFit.cover,
-//                           errorBuilder: (context, error, stackTrace) {
-//                             return Container(
-//                               width: 64,
-//                               height: 64,
-//                               decoration: BoxDecoration(
-//                                 gradient: LinearGradient(
-//                                   colors: [
-//                                     Color(0xFFFF8C00),
-//                                     Color(0xFFFFB347)
-//                                   ],
-//                                 ),
-//                                 shape: BoxShape.circle,
-//                               ),
-//                               child: Icon(
-//                                 Icons.person,
-//                                 color: Colors.white,
-//                                 size: 32,
-//                               ),
-//                             );
-//                           },
-//                         )
-//                       : Container(
-//                           width: 64,
-//                           height: 64,
-//                           decoration: BoxDecoration(
-//                             gradient: LinearGradient(
-//                               colors: [Color(0xFFFF8C00), Color(0xFFFFB347)],
-//                             ),
-//                             shape: BoxShape.circle,
-//                           ),
-//                           child: Icon(
-//                             Icons.person,
-//                             color: Colors.white,
-//                             size: 32,
-//                           ),
-//                         ),
-//                 ),
-//               ),
+// Extract your existing logic into these helper methods for cleaner code
+  void _handleCheckIn() {
+    Geolocator.isLocationServiceEnabled().then((bool serviceEnabled) {
+      if (userObj!['Deleted'] == 0) {
+        if (serviceEnabled) {
+          if (userObj!['EnableLocation'] > 0) {
+            if (userObj!['EnableLocationRestriction'] == 1) {
+              _storage.setString('Action', 'checkin');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider(
+                    create: (context) => LocationRestrictionState(),
+                    child: ValidateLocation(widget.index3),
+                  ),
+                ),
+              );
+            } else {
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider(
+                    create: (context) => AppState(),
+                    child: CheckInCapture(),
+                  ),
+                ),
+              );
+            }
+          } else {
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider(
+                  create: (context) => AppState(),
+                  child: CheckInCapture(),
+                ),
+              ),
+            );
+          }
+        } else {
+          _showLocationServiceDialog();
+        }
+      } else {
+        _showInactiveUserDialog();
+      }
+    });
+  }
 
-//               // Status indicator dot
-//               Positioned(
-//                 bottom: 2,
-//                 right: 2,
-//                 child: Container(
-//                   width: 16,
-//                   height: 16,
-//                   decoration: BoxDecoration(
-//                     color: isCheckedIn ? Color(0xFF10B981) : Color(0xFF9CA3AF),
-//                     shape: BoxShape.circle,
-//                     border: Border.all(color: Colors.white, width: 2),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
+  void _handleCheckOut() {
+    // Your existing check out logic here
+    Geolocator.isLocationServiceEnabled().then((bool serviceEnabled) {
+      if (userObj!['Deleted'] == 0) {
+        if (serviceEnabled) {
+          if (userObj!['EnableLocation'] > 0) {
+            if (userObj!['EnableLocationRestriction'] == 1) {
+              _storage.setString('Action', 'checkout');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider(
+                    create: (context) => LocationRestrictionState(),
+                    child: ValidateLocation(widget.index3),
+                  ),
+                ),
+              );
+            } else {
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider(
+                    create: (context) => AppState(),
+                    child: CheckoutCapture(),
+                  ),
+                ),
+              );
+            }
+          } else {
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider(
+                  create: (context) => AppState(),
+                  child: CheckoutCapture(),
+                ),
+              ),
+            );
+          }
+        } else {
+          _showLocationServiceDialog();
+        }
+      } else {
+        _showInactiveUserDialog();
+      }
+    });
+  }
 
-//           SizedBox(width: 16),
+  void _handleVisit() {
+    // Your existing visit logic here
+    Geolocator.isLocationServiceEnabled().then((bool serviceEnabled) {
+      if (userObj!['Deleted'] == 0) {
+        if (serviceEnabled) {
+          Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(
+              builder: (context) => ChangeNotifierProvider(
+                create: (context) => AppState(),
+                child: VisitCapture(),
+              ),
+            ),
+          );
+        } else {
+          _showLocationServiceDialog();
+        }
+      } else {
+        _showInactiveUserDialog();
+      }
+    });
+  }
 
-//           // User Info
-//           Expanded(
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 Text(
-//                   userObj != null
-//                       ? "${userObj!['FirstName']} ${userObj!['LastName'] ?? ''}"
-//                       : "User Name",
-//                   style: TextStyle(
-//                     fontSize: 18,
-//                     fontWeight: FontWeight.w600,
-//                     color: Color(0xFF2D3748),
-//                   ),
-//                 ),
-//                 SizedBox(height: 4),
-//                 Container(
-//                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-//                   decoration: BoxDecoration(
-//                     color: isCheckedIn
-//                         ? Color(0xFF10B981).withOpacity(0.1)
-//                         : Color(0xFF9CA3AF).withOpacity(0.1),
-//                     borderRadius: BorderRadius.circular(6),
-//                   ),
-//                   child: Text(
-//                     isCheckedIn ? 'Currently Working' : 'Not Working',
-//                     style: TextStyle(
-//                       fontSize: 12,
-//                       color:
-//                           isCheckedIn ? Color(0xFF10B981) : Color(0xFF6B7280),
-//                       fontWeight: FontWeight.w500,
-//                     ),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
+  void _handleInventoryScan() {
+    // Your existing inventory scan logic here
+    Geolocator.isLocationServiceEnabled().then((bool serviceEnabled) async {
+      if (userObj!['Deleted'] == 0) {
+        if (serviceEnabled) {
+          bool isLocationValid =
+              await LocationValidationService.validateLocationForInventoryScan(
+                  context);
+          if (isLocationValid) {
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (context) => EnhancedBarcodeScannerTwoScreen(
+                  index: widget.index3,
+                ),
+              ),
+            );
+          }
+        } else {
+          _showLocationServiceDialog();
+        }
+      } else {
+        _showInactiveUserDialog();
+      }
+    });
+  }
 
-//           // Quick Info
-//           if (isCheckedIn)
-//             Container(
-//               padding: EdgeInsets.all(8),
-//               decoration: BoxDecoration(
-//                 color: Color(0xFFFF8C00).withOpacity(0.1),
-//                 borderRadius: BorderRadius.circular(8),
-//               ),
-//               child: Icon(
-//                 Icons.work,
-//                 color: Color(0xFFFF8C00),
-//                 size: 20,
-//               ),
-//             ),
-//         ],
-//       ),
-//     );
-//   }
+  void _handleInventoryGRN() {
+    // Your existing inventory scan logic here
+    Geolocator.isLocationServiceEnabled().then((bool serviceEnabled) async {
+      if (userObj!['Deleted'] == 0) {
+        if (serviceEnabled) {
+          Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(
+              builder: (context) => InventoryGRN(
+                index: widget.index3,
+              ),
+            ),
+          );
+        } else {
+          _showLocationServiceDialog();
+        }
+      } else {
+        _showInactiveUserDialog();
+      }
+    });
+  }
 
-//   void _showSnackBar(String message) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(
-//         content: Text(message),
-//         backgroundColor: Color(0xFFFF8C00),
-//         behavior: SnackBarBehavior.floating,
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//         margin: EdgeInsets.all(16),
-//       ),
-//     );
-//   }
-// }
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => CustomErrorDialog(
+        title: 'Location Service Disabled',
+        message: 'Please enable location service before continuing.',
+        onOkPressed: switchOnLocation,
+        iconData: Icons.error_outline,
+      ),
+    );
+  }
+
+  void _showInactiveUserDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => CustomErrorDialog(
+        title: 'Inactive User',
+        message:
+            'This user has been deactivated and access is restricted. Please contact the system administrator.',
+        onOkPressed: () => Navigator.of(context).pop(),
+        iconData: Icons.no_accounts_sharp,
+      ),
+    );
+  }
+
+  Widget _buildWorkTimeCard(Size size) {
+    return Container(
+      width: isCheckedIn ? size.width * 0.6 : size.width * 0.75,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Work Time Icon - Changed to a more neutral color
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 50,
+              width: 50,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isCheckedIn
+                    ? Color(0xFFFF8C00).withOpacity(0.1)
+                    : Color(0xFF9CA3AF).withOpacity(
+                        0.2), // Green when active, gray when inactive
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.access_time,
+                color: isCheckedIn ? Color(0xFFFF8C00) : Color(0xFF9CA3AF),
+                size: 24,
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: SizedBox(),
+            flex: 1,
+          ),
+          // Work Time Info
+          Expanded(
+            flex: isCheckedIn ? 7 : 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Work Time',
+                  style: TextStyle(
+                    fontSize: Responsive.isMobileSmall(context)
+                        ? 17
+                        : Responsive.isMobileMedium(context) ||
+                                Responsive.isMobileLarge(context)
+                            ? 19
+                            : Responsive.isTabletPortrait(context)
+                                ? 22
+                                : 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 4),
+                AnimatedDefaultTextStyle(
+                  duration: Duration(milliseconds: 300),
+                  style: TextStyle(
+                    fontSize: Responsive.isMobileSmall(context)
+                        ? workedTime == "Not checked in yet"
+                            ? 16
+                            : 20
+                        : Responsive.isMobileMedium(context) ||
+                                Responsive.isMobileLarge(context)
+                            ? workedTime == "Not checked in yet"
+                                ? 19
+                                : 23
+                            : Responsive.isTabletPortrait(context)
+                                ? workedTime == "Not checked in yet"
+                                    ? 22
+                                    : 25
+                                : 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                    letterSpacing: workedTime == "Not checked in yet" ? 0 : 1,
+                  ),
+                  child: Text(
+                    workedTime,
+                    style: TextStyle(
+                      fontSize: Responsive.isMobileSmall(context)
+                          ? workedTime == "Not checked in yet"
+                              ? 16
+                              : 20
+                          : Responsive.isMobileMedium(context) ||
+                                  Responsive.isMobileLarge(context)
+                              ? workedTime == "Not checked in yet"
+                                  ? 19
+                                  : 23
+                              : Responsive.isTabletPortrait(context)
+                                  ? workedTime == "Not checked in yet"
+                                      ? 22
+                                      : 25
+                                  : 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Removed the duplicate "Active" status badge from here
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileCard(Size size, bool isCheckedIn) {
+    return Container(
+      width: size.width * 0.9,
+      padding: EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Profile Image with Status Ring
+          Stack(
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: appState.isDeactivated
+                        ? Colors.red
+                        : isCheckedIn
+                            ? Colors.green
+                            : Color(0xFF9CA3AF),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (appState.isDeactivated
+                              ? Colors.red
+                              : isCheckedIn
+                                  ? Color(0xFF10B981)
+                                  : Color(0xFF9CA3AF))
+                          .withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: userObj != null && userObj!["ProfileImage"] != null
+                      ? userObj!["ProfileImage"] !=
+                              "https://0830s3gvuh.execute-api.us-east-2.amazonaws.com/dev/services-file?bucket=icheckfaceimages&image=None"
+                          ? Image.network(
+                              userObj!["ProfileImage"],
+                              width: 64,
+                              height: 64,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Color(0xFF6B7280),
+                                        Color(0xFF9CA3AF)
+                                      ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                );
+                              },
+                            )
+                          : Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFF6B7280),
+                                    Color(0xFF9CA3AF)
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            )
+                      : Image.network(
+                          "https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png",
+                        ),
+                ),
+              ),
+
+              // Status indicator dot
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: appState.isDeactivated
+                        ? Colors.red
+                        : isCheckedIn
+                            ? Colors.green
+                            : Color(0xFF9CA3AF),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(width: size.width * 0.1),
+
+          // User Info - Keep only this status indicator
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userObj != null
+                      ? userObj!['LastName'] != null
+                          ? userObj!["FirstName"] + " " + userObj!["LastName"]
+                          : userObj!['LastName']
+                      : "",
+                  style: TextStyle(
+                    fontSize: Responsive.isMobileSmall(context)
+                        ? 18
+                        : Responsive.isMobileMedium(context) ||
+                                Responsive.isMobileLarge(context)
+                            ? 20
+                            : Responsive.isTabletPortrait(context)
+                                ? 25
+                                : 25,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: appState.isDeactivated
+                            ? Colors.red
+                            : isCheckedIn
+                                ? Color(0xFF10B981)
+                                : Colors.grey,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      appState.isDeactivated
+                          ? 'Inactive'
+                          : isCheckedIn
+                              ? 'Available'
+                              : 'Not Available',
+                      style: TextStyle(
+                        fontSize: Responsive.isMobileSmall(context)
+                            ? 14
+                            : Responsive.isMobileMedium(context) ||
+                                    Responsive.isMobileLarge(context)
+                                ? 16
+                                : Responsive.isTabletPortrait(context)
+                                    ? 20
+                                    : 20,
+                        color: appState.isDeactivated
+                            ? Colors.red
+                            : isCheckedIn
+                                ? Color(0xFF10B981)
+                                : Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // GET the status of  the last event type (checkin or CheckoutCapture)
+
+  void updateWorkTime() {
+    if (lastCheckIn != null && lastCheckIn!["OutTime"] == null) {
+      lastCheckInTime = DateTime.parse(lastCheckIn!["InTime"]);
+      Duration duration = DateTime.now().difference(lastCheckInTime!);
+      if (!mounted) return;
+
+      setState(() {
+        String twoDigits(int n) => n.toString().padLeft(2, "0");
+        String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+        String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+        workedTime =
+            "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+      });
+    } else {
+      workedTime = "Not checked in yet";
+    }
+  }
+
+  // LOAD LAST CHECKIN
+
+  Future<void> loadLastCheckIn() async {
+    showProgressDialog(context);
+    String userId = userObj!['Id'];
+    String customerId = userObj!['CustomerId'];
+
+    var response = await ApiService.getTodayCheckInCheckOut(userId, customerId);
+    closeDialog(context);
+    if (response != null && response.statusCode == 200) {
+      dynamic item = jsonDecode(response.body);
+      print("item $item");
+
+      if (item != null) {
+        if (item["enrolled"] == 'pending' || item["enrolled"] == null) {
+          await _storage.clear();
+          while (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) {
+              return MyApp(_storage);
+            }),
+          );
+        } else if (item["Data"] == 'Yes') {
+          lastCheckIn = item;
+          _storage.setString('last_check_in', jsonEncode(item));
+        }
+      }
+    }
+  }
+
+  String formatDuration(Duration duration) {
+    int hours = duration.inHours;
+    int minutes = (duration.inMinutes % 60);
+    int seconds = (duration.inSeconds % 60);
+
+    String formattedDuration = '';
+
+    if (hours > 0) {
+      formattedDuration += '${hours.toString().padLeft(2, '0')} hr ';
+    }
+
+    if (minutes > 0) {
+      formattedDuration += '${minutes.toString().padLeft(2, '0')} min ';
+    }
+
+    if (seconds > 0 || (hours == 0 && minutes == 0)) {
+      formattedDuration += '${seconds.toString().padLeft(2, '0')} sec';
+    }
+
+    return formattedDuration.trim();
+  }
+
+  void noHandler() {
+    closeDialog(context);
+  }
+
+  // LOAD USER DATA
+
+  Future<void> loadUserData() async {
+    showProgressDialog(context);
+    var response = await ApiService.verifyUserWithEmpCode(employeeCode);
+    closeDialog(context);
+    if (response != null &&
+        response.statusCode == 200 &&
+        response.body == "NoRecordsFound") {
+      await _storage.clear();
+      while (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            return MyApp(_storage);
+          },
+        ),
+      );
+    } else if (response != null && response.statusCode == 200) {
+      userObj = jsonDecode(response.body);
+
+      _storage.setString('user_data', response.body);
+      String? lastCheckInData = _storage.getString('last_check_in');
+      if (lastCheckInData == null) {
+        await loadLastCheckIn();
+      } else {
+        lastCheckIn = jsonDecode(lastCheckInData);
+      }
+    }
+  }
+
+  int calculateDayDifference(DateTime date) {
+    DateTime now = DateTime.now();
+    return DateTime(date.year, date.month, date.day)
+        .difference(DateTime(now.year, now.month, now.day))
+        .inDays;
+  }
+}
