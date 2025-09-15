@@ -7,8 +7,16 @@ import 'package:icheck_stelacom/app-services/api_service.dart';
 import '../../components/utils/custom_error_dialog.dart';
 import '../../components/utils/dialogs.dart';
 
+// Result class to return both validation result and description
+class LocationValidationResult {
+  final bool isValid;
+  final String? description;
+
+  LocationValidationResult({required this.isValid, this.description});
+}
+
 class LocationValidationService {
-  static Future<bool> validateLocationForInventoryScan(
+  static Future<LocationValidationResult> validateLocationForInventoryScan(
       BuildContext context) async {
     try {
       // Show loading dialog
@@ -20,7 +28,7 @@ class LocationValidationService {
       if (userData == null) {
         closeDialog(context);
         _showErrorDialog(context, 'User data not found');
-        return false;
+        return LocationValidationResult(isValid: false);
       }
 
       Map<String, dynamic> userObj = jsonDecode(userData);
@@ -34,7 +42,7 @@ class LocationValidationService {
           response.body == "null") {
         closeDialog(context);
         _showErrorDialog(context, 'Failed to fetch location restrictions');
-        return false;
+        return LocationValidationResult(isValid: false);
       }
 
       List<dynamic> locationRestrictions = jsonDecode(response.body);
@@ -42,7 +50,7 @@ class LocationValidationService {
       // If no location restrictions, allow access
       if (locationRestrictions.isEmpty) {
         closeDialog(context);
-        return true;
+        return LocationValidationResult(isValid: true);
       }
 
       // Check location services and permissions
@@ -53,7 +61,7 @@ class LocationValidationService {
       if (!isLocationServiceEnabled) {
         closeDialog(context);
         _showLocationServiceDisabledDialog(context);
-        return false;
+        return LocationValidationResult(isValid: false);
       }
 
       LocationPermission permission =
@@ -62,12 +70,14 @@ class LocationValidationService {
           permission == LocationPermission.deniedForever) {
         closeDialog(context);
         _showLocationPermissionDialog(context);
-        return false;
+        return LocationValidationResult(isValid: false);
       }
 
       // Get current position with high accuracy
       Position currentPosition = await geolocatorPlatform.getCurrentPosition(
           locationSettings: LocationSettings(accuracy: LocationAccuracy.high));
+
+      String? validLocationDescription;
 
       // Process each location using the EXACT same logic as your original code
       for (var element in locationRestrictions) {
@@ -82,6 +92,13 @@ class LocationValidationService {
         element['Distance'] = distance2 * 1000 - element['Radius'];
 
         print('Location: ${element['Name']}, Distance: ${element['Distance']}');
+
+        // Check if user is within this location (Distance <= 0 means within radius)
+        if (element['Distance'] <= 0) {
+          validLocationDescription = element['Description'];
+          print(
+              'User is within location: ${element['Name']}, Description: ${element['Description']}');
+        }
       }
 
       // Apply the EXACT same blocking logic as your original code
@@ -108,16 +125,17 @@ class LocationValidationService {
 
         _showLocationRestrictionDialog(context,
             'You are ${distanceKm.toStringAsFixed(3)} KM away from the correct location');
-        return false;
+        return LocationValidationResult(isValid: false);
       }
 
-      return true;
+      return LocationValidationResult(
+          isValid: true, description: validLocationDescription);
     } catch (e) {
       closeDialog(context);
       _showErrorDialog(
           context, 'Location validation failed. Please try again.');
       print('Location validation error: $e');
-      return false;
+      return LocationValidationResult(isValid: false);
     }
   }
 

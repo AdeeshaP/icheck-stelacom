@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:icheck_stelacom/constants.dart';
-import 'package:icheck_stelacom/models/device_item.dart'; 
+import 'package:icheck_stelacom/models/device_item.dart';
 import 'package:icheck_stelacom/models/scanned_item2.dart';
 import 'package:icheck_stelacom/responsive.dart';
 import 'package:icheck_stelacom/screens/Inventroy-Scan/verifcaiton_resuts2.dart';
@@ -20,8 +20,10 @@ import 'package:vibration/vibration.dart';
 
 class EnhancedBarcodeScannerTwoScreen extends StatefulWidget {
   final int index;
+  final String locationDescription;
 
-  const EnhancedBarcodeScannerTwoScreen({super.key, required this.index});
+  const EnhancedBarcodeScannerTwoScreen(
+      {super.key, required this.index, required this.locationDescription});
 
   @override
   _EnhancedBarcodeScannerTwoScreenState createState() =>
@@ -81,6 +83,8 @@ class _EnhancedBarcodeScannerTwoScreenState
         print('Error parsing user data: $e');
       }
     }
+
+    print("location desctiption ID ${widget.locationDescription}");
 
     await _loadDevicesFromJSON(); // Load fresh from JSON
   }

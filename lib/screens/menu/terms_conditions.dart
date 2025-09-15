@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:pdfx/pdfx.dart';
 import '../enroll/code_verification.dart';
 import 'package:icheck_stelacom/constants.dart';
 import 'package:icheck_stelacom/screens/menu/about_us.dart';
@@ -10,24 +11,23 @@ import 'package:icheck_stelacom/providers/appstate_provieder.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../responsive.dart';
-import 'package:easy_pdf_viewer/easy_pdf_viewer.dart';
 
 class TermsAndConditions extends StatefulWidget {
   final int index3;
-  TermsAndConditions({super.key,  required this.index3});
+  TermsAndConditions({super.key, required this.index3});
 
   @override
   _TermsAndConditionsState createState() => _TermsAndConditionsState();
 }
 
 class _TermsAndConditionsState extends State<TermsAndConditions> {
-  bool _isLoading = true;
-  late PDFDocument? document;
   late SharedPreferences _storage;
   Map<String, dynamic>? userObj;
   String employeeCode = "";
   String userData = "";
   AppState appState = AppState();
+  late PdfController pdfController;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -78,8 +78,7 @@ class _TermsAndConditionsState extends State<TermsAndConditions> {
         context,
         MaterialPageRoute(builder: (context) {
           return AboutUs(
-            index3: widget.index3,       
-
+            index3: widget.index3,
           );
         }),
       );
@@ -107,9 +106,14 @@ class _TermsAndConditionsState extends State<TermsAndConditions> {
   }
 
   loadDocument() async {
-    document = await PDFDocument.fromURL(
-        "https://icheck.ai/mobile/TermsandConditions.pdf");
-    setState(() => _isLoading = false);
+    try {
+      pdfController = PdfController(
+        document: PdfDocument.openAsset('assets/TermsandConditions.pdf'),
+      );
+      setState(() => _isLoading = false);
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -282,28 +286,14 @@ class _TermsAndConditionsState extends State<TermsAndConditions> {
             ),
             SizedBox(height: 20),
             Expanded(
-              child: Center(
-                child: _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : PDFViewer(
-                        document: document!,
-                        zoomSteps: 1,
-                        showPicker: false,
-                        showNavigation: true,
-                      ),
-              ),
-            )
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : PdfView(
+                      controller: pdfController,
+                      scrollDirection: Axis.vertical,
+                    ),
+            ),
 
-            // : Expanded(
-            //     child: _isLoading
-            //         ? Center(
-            //             child: CircularProgressIndicator(),
-            //           )
-            //         : PDFListViewer(
-            //             document: document!,
-            //             preload: true,
-            // ),
-            // ),
           ],
         ),
       ),

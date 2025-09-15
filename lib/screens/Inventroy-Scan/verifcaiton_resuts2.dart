@@ -1290,7 +1290,7 @@ class DeviceDataSource extends DataTableSource {
                       children: [
                         if (item.imei != null)
                           Text(
-                            'IMEI: ${item.imei!.length > 10 ? item.imei!.substring(0, 10) + '...' : item.imei}',
+                            'IMEI: ${item.imei!.length > 14 ? item.imei!.substring(0, 14) + '...' : item.imei}',
                             style:
                                 TextStyle(fontSize: 9, fontFamily: 'monospace'),
                           ),

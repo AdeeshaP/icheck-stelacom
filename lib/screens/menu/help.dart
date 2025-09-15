@@ -1,11 +1,11 @@
 import 'dart:convert';
+import 'package:pdfx/pdfx.dart';
 import '../enroll/code_verification.dart';
 import 'package:icheck_stelacom/constants.dart';
 import 'package:icheck_stelacom/screens/menu/about_us.dart';
 import 'package:icheck_stelacom/screens/menu/contact_us.dart';
 import 'package:icheck_stelacom/screens/menu/terms_conditions.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:easy_pdf_viewer/easy_pdf_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:icheck_stelacom/providers/appstate_provieder.dart';
 import 'package:provider/provider.dart';
@@ -23,12 +23,13 @@ class HelpScreen extends StatefulWidget {
 
 class _HelpScreenState extends State<HelpScreen> {
   bool _isLoading = true;
-  PDFDocument? document;
   late SharedPreferences _storage;
   Map<String, dynamic>? userObj;
   String employeeCode = "";
   String userData = "";
   AppState appState = AppState();
+  late PdfController pdfController;
+
 
   @override
   void initState() {
@@ -40,13 +41,19 @@ class _HelpScreenState extends State<HelpScreen> {
 
   @override
   void dispose() {
-    document = null;
+    pdfController.dispose();
     super.dispose();
   }
 
   loadDocument() async {
-    document = await PDFDocument.fromAsset("assets/iCheck_user_manual.pdf");
-    setState(() => _isLoading = false);
+    try {
+      pdfController = PdfController(
+        document: PdfDocument.openAsset('assets/iCheck_user_manual.pdf'),
+      );
+      setState(() => _isLoading = false);
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> getSharedPrefs() async {
@@ -280,30 +287,15 @@ class _HelpScreenState extends State<HelpScreen> {
               ),
             ),
             SizedBox(height: 20),
-            Expanded(
-              child: Center(
-                heightFactor: size.height,
-                child: _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : PDFViewer(
-                        document: document!,
-                        zoomSteps: 1,
-                        showPicker: false,
-                        showNavigation: true,
-                        maxScale: 1,
-                      ),
-              ),
-            )
-            // : Expanded(
-            //     child: _isLoading
-            //         ? Center(
-            //             child: CircularProgressIndicator(),
-            //           )
-            //         : PDFListViewer(
-            //             document: document!,
-            //             preload: true,
-            //           ),
-            //   ),
+               Expanded(
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : PdfView(
+                      controller: pdfController,
+                      scrollDirection: Axis.vertical,
+                    ),
+            ),
+          
           ],
         ),
       ),

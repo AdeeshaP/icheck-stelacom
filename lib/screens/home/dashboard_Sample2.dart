@@ -6,7 +6,7 @@ import 'package:icheck_stelacom/screens/Visits/capture_screen.dart';
 import 'package:icheck_stelacom/screens/checkin-checkout/checkin_capture_screen.dart';
 import 'package:icheck_stelacom/screens/checkin-checkout/checkout_capture_screen.dart';
 import 'package:icheck_stelacom/app-services/location_service.dart';
-import 'package:icheck_stelacom/screens/inventory-GRN/grn_screen.dart';
+import 'package:icheck_stelacom/screens/inventory-GRN/transfer_orders_screen.dart';
 import '../enroll/code_verification.dart';
 import 'package:icheck_stelacom/constants.dart';
 import 'package:icheck_stelacom/screens/location_restrictions/location_restrictions.dart';
@@ -105,15 +105,12 @@ class _ModifiedDashboardState extends State<ModifiedDashboard>
   }
 
   Future<void> getSharedPrefs() async {
-    await getVersionStatus();
+    // await getVersionStatus();
 
     _storage = await SharedPreferences.getInstance();
     String? userData = await _storage.getString('user_data');
     employeeCode = await _storage.getString('employee_code') ?? "";
 
-    // if (userData == null) {
-    //   await loadUserData();
-    // } else {
     userObj = jsonDecode(userData!);
 
     if (mounted) appState.updateOfficeAddress(userObj!["OfficeAddress"]);
@@ -123,13 +120,12 @@ class _ModifiedDashboardState extends State<ModifiedDashboard>
     }
 
     await loadLastCheckIn();
-    // }
 
-    if (versionstatus != null) {
-      Future.delayed(Duration(seconds: 2), () async {
-        _verifyVersion();
-      });
-    }
+    // if (versionstatus != null) {
+    //   Future.delayed(Duration(seconds: 2), () async {
+    //     _verifyVersion();
+    //   });
+    // }
   }
 
 // --------GET App Version Status--------------//
@@ -817,14 +813,15 @@ class _ModifiedDashboardState extends State<ModifiedDashboard>
     Geolocator.isLocationServiceEnabled().then((bool serviceEnabled) async {
       if (userObj!['Deleted'] == 0) {
         if (serviceEnabled) {
-          bool isLocationValid =
+          LocationValidationResult result =
               await LocationValidationService.validateLocationForInventoryScan(
                   context);
-          if (isLocationValid) {
+          if (result.isValid) {
             Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (context) => EnhancedBarcodeScannerTwoScreen(
                   index: widget.index3,
+                  locationDescription: result.description!,
                 ),
               ),
             );
@@ -845,7 +842,7 @@ class _ModifiedDashboardState extends State<ModifiedDashboard>
         if (serviceEnabled) {
           Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
-              builder: (context) => InventoryGRN(
+              builder: (context) => TransferOrdersScreen(
                 index: widget.index3,
               ),
             ),

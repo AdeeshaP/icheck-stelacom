@@ -406,7 +406,7 @@ class _AboutUsState extends State<AboutUs> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '2.0.6',
+                              '1.0.0',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
