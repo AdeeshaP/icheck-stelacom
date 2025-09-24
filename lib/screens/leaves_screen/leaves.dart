@@ -1,5 +1,5 @@
 import 'package:icheck_stelacom/screens/leaves_screen/leave_request_screen_two.dart';
-import 'package:icheck_stelacom/providers/appstate_provieder.dart';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:icheck_stelacom/constants.dart';
 import 'package:icheck_stelacom/screens/leaves_screen/apply_leaves.dart';

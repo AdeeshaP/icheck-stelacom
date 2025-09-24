@@ -88,10 +88,10 @@ flutter:
     - assets/iCheck_user_manual.pdf
     - assets/TermsandConditions.pdf
     - assets/json/imei_list.json
-    - assets/json/device_list3.json
     - assets/json/device_list.json
     - assets/json/device_list2.json
     - assets/json/transfer_orders.json
+    - assets/json/transfer_orders2.json
     - assets/
   #   - images/a_dot_ham.jpeg
 

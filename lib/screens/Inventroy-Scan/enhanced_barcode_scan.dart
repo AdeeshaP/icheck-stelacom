@@ -1,788 +1,868 @@
-// import 'dart:async';
-// import 'dart:convert';
-// import 'package:cached_network_image/cached_network_image.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
-// import 'package:icheck_stelacom/constants.dart';
-// import 'package:icheck_stelacom/models/imei_item.dart';
-// import 'package:icheck_stelacom/models/scanned_item.dart';
-// import 'package:icheck_stelacom/responsive.dart';
-// import 'package:icheck_stelacom/screens/Inventroy-Scan/veritfication_results.dart';
-// import 'package:icheck_stelacom/screens/enroll/code_verification.dart';
-// import 'package:icheck_stelacom/screens/menu/about_us.dart';
-// import 'package:icheck_stelacom/screens/menu/contact_us.dart';
-// import 'package:icheck_stelacom/screens/menu/help.dart';
-// import 'package:icheck_stelacom/screens/menu/terms_conditions.dart';
-// import 'package:mobile_scanner/mobile_scanner.dart';
-// import 'package:permission_handler/permission_handler.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:vibration/vibration.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:icheck_stelacom/constants.dart';
+import 'package:icheck_stelacom/models/device_item.dart';
+import 'package:icheck_stelacom/models/scanned_item2.dart';
+import 'package:icheck_stelacom/responsive.dart';
+import 'package:icheck_stelacom/screens/Inventroy-Scan/verifcaiton_resuts2.dart';
+import 'package:icheck_stelacom/screens/enroll/code_verification.dart';
+import 'package:icheck_stelacom/screens/menu/about_us.dart';
+import 'package:icheck_stelacom/screens/menu/contact_us.dart';
+import 'package:icheck_stelacom/screens/menu/help.dart';
+import 'package:icheck_stelacom/screens/menu/terms_conditions.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 
-// class EnhancedBarcodeScannerScreen extends StatefulWidget {
-//   final int index;
+class EnhancedBarcodeScannerTwoScreen extends StatefulWidget {
+  final int index;
+  final String locationDescription;
 
-//   const EnhancedBarcodeScannerScreen({super.key, required this.index});
+  const EnhancedBarcodeScannerTwoScreen(
+      {super.key, required this.index, required this.locationDescription});
 
-//   @override
-//   _EnhancedBarcodeScannerScreenState createState() =>
-//       _EnhancedBarcodeScannerScreenState();
-// }
+  @override
+  _EnhancedBarcodeScannerTwoScreenState createState() =>
+      _EnhancedBarcodeScannerTwoScreenState();
+}
 
-// class _EnhancedBarcodeScannerScreenState
-//     extends State<EnhancedBarcodeScannerScreen> with TickerProviderStateMixin {
-//   MobileScannerController cameraController = MobileScannerController(
-//     detectionSpeed: DetectionSpeed.noDuplicates,
-//     facing: CameraFacing.back,
-//     torchEnabled: false,
-//   );
+class _EnhancedBarcodeScannerTwoScreenState
+    extends State<EnhancedBarcodeScannerTwoScreen>
+    with TickerProviderStateMixin {
+  MobileScannerController cameraController = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    facing: CameraFacing.back,
+    torchEnabled: false,
+  );
 
-//   // IMEI verification system - No SharedPreferences for IMEI storage
-//   List<IMEIItem> imeiList = [];
-//   List<ScannedItem> scannedItems = [];
-//   Set<String> scannedBarcodes = {};
+  // Updated device verification system
+  List<DeviceItem> deviceList = [];
+  List<ScannedItem> scannedItems = [];
+  Set<String> scannedBarcodes = {};
 
-//   bool isScanning = true;
-//   bool flashEnabled = false;
-//   late AnimationController _pulseController;
-//   late Animation<double> _pulseAnimation;
-//   late SharedPreferences _storage;
-//   Map<String, dynamic>? userObj;
-//   String employeeCode = "";
-//   String userData = "";
-//   // int verifiedCount = 0;
-//   // int totalCount = 0;
-//   // Only keep user-related SharedPreferences keys
-//   static const String STORAGE_KEY_USER_DATA = 'user_data';
-//   static const String STORAGE_KEY_EMPLOYEE_CODE = 'employee_code';
+  bool isScanning = true;
+  bool flashEnabled = false;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  late SharedPreferences _storage;
+  Map<String, dynamic>? userObj;
+  String employeeCode = "";
+  String userData = "";
 
-//   // Duplicate prevention
-//   String? lastScannedBarcode;
-//   DateTime? lastScanTime;
-//   Timer? _scanCooldownTimer;
-//   bool _isProcessing = false;
+  // Only keep user-related SharedPreferences keys
+  static const String STORAGE_KEY_USER_DATA = 'user_data';
+  static const String STORAGE_KEY_EMPLOYEE_CODE = 'employee_code';
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     _requestCameraPermission();
-//     _initializeAnimations();
-//     _loadUserPreferences();
-//   }
+  // Duplicate prevention
+  String? lastScannedBarcode;
+  DateTime? lastScanTime;
+  Timer? _scanCooldownTimer;
+  bool _isProcessing = false;
 
-//   Future<void> _loadUserPreferences() async {
-//     _storage = await SharedPreferences.getInstance();
-//     userData = _storage.getString(STORAGE_KEY_USER_DATA) ?? "";
-//     employeeCode = _storage.getString(STORAGE_KEY_EMPLOYEE_CODE) ?? "";
+  @override
+  void initState() {
+    super.initState();
+    _requestCameraPermission();
+    _initializeAnimations();
+    _loadUserPreferences();
+  }
 
-//     if (userData.isNotEmpty) {
-//       try {
-//         userObj = jsonDecode(userData);
-//       } catch (e) {
-//         print('Error parsing user data: $e');
-//       }
-//     }
+  Future<void> _loadUserPreferences() async {
+    _storage = await SharedPreferences.getInstance();
+    userData = _storage.getString(STORAGE_KEY_USER_DATA) ?? "";
+    employeeCode = _storage.getString(STORAGE_KEY_EMPLOYEE_CODE) ?? "";
 
-//     await _loadIMEIFromJSON(); // Always load fresh from JSON
-//   }
+    if (userData.isNotEmpty) {
+      try {
+        userObj = jsonDecode(userData);
+      } catch (e) {
+        print('Error parsing user data: $e');
+      }
+    }
 
-//   // Always load IMEI from the JSON file - no caching
-//   Future<void> _loadIMEIFromJSON() async {
-//     try {
-//       String jsonString =
-//           await rootBundle.loadString('assets/json/imei_list2.json');
+    print("location desctiption ID ${widget.locationDescription}");
 
-//       Map<String, dynamic> jsonData = jsonDecode(jsonString);
-//       List<dynamic> devices = jsonData['devices'];
-//       // String assignedDate = jsonData['assigned_date'] ?? _getTodayDateString();
-//       // String username = jsonData['username'] ?? 'Unknown User';
+    await _loadDevicesFromJSON(); // Load fresh from JSON
+  }
 
-//       setState(() {
-//         // Always create fresh list with no verification status
-//         imeiList = devices
-//             .map((device) => IMEIItem(
-//                   imei: device['imei'].toString(),
-//                   model: device['model'].toString(),
-//                   isVerified: false, // Always start fresh
-//                   verificationTime: null, // Always start fresh
-//                 ))
-//             .toList();
+  // Updated method to load devices from JSON
+  Future<void> _loadDevicesFromJSON() async {
+    try {
+      String jsonString =
+          await rootBundle.loadString('assets/json/device_list3.json');
 
-//         // verifiedCount = imeiList.where((item) => item.isVerified).length;
-//         // totalCount = imeiList.length;
+      Map<String, dynamic> jsonData = jsonDecode(jsonString);
+      List<dynamic> devices = jsonData['devices'];
 
-//         // Reset scan tracking
-//         scannedItems.clear();
-//         scannedBarcodes.clear();
-//       });
+      setState(() {
+        // Convert to new DeviceItem model
+        deviceList = devices.map((device) {
+          return DeviceItem(
+            model: device['model'].toString(),
+            imei: device['imei']?.toString(),
+            serialNo: device['serial_no']?.toString(),
+            serialized: device['serialized'] ??
+                (device['imei'] != null || device['serial_no'] != null),
+            quantity: device['quantity'],
+            isVerified: false,
+            verificationTime: null,
+          );
+        }).toList();
 
-//       print('Loaded ${imeiList.length} IMEIs from JSON for user');
-//     } catch (e) {
-//       print('Error loading IMEI from JSON: $e');
-//       _showErrorSnackBar('Failed to load IMEI list from file');
-//     }
-//   }
+        // Reset scan tracking
+        scannedItems.clear();
+        scannedBarcodes.clear();
+      });
 
-//   // Get today's date as string (YYYY-MM-DD format)
-//   // String _getTodayDateString() {
-//   //   DateTime now = DateTime.now();
-//   //   return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-//   // }
+      print('Loaded ${deviceList.length} devices from JSON');
+      print(
+          'Scannable devices: ${deviceList.where((d) => d.scannableIdentifier != null).length}');
+      print(
+          'Non-serialized devices: ${deviceList.where((d) => !d.serialized).length}');
+    } catch (e) {
+      print('Error loading devices from JSON: $e');
+      _showErrorSnackBar('Failed to load device list from file');
+    }
+  }
 
-//   // Show error message to user
-//   void _showErrorSnackBar(String message) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(
-//         content: Row(
-//           children: [
-//             Icon(Icons.error, color: Colors.white),
-//             SizedBox(width: 8),
-//             Expanded(child: Text(message)),
-//           ],
-//         ),
-//         duration: Duration(seconds: 4),
-//         backgroundColor: Colors.red,
-//       ),
-//     );
-//   }
+  // Get today's date as string (YYYY-MM-DD format)
+  // String _getTodayDateString() {
+  //   DateTime now = DateTime.now();
+  //   return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+  // }
 
-//   // SIDE MENU BAR UI
-//   List<String> _menuOptions = [
-//     'Help',
-//     'About Us',
-//     'Contact Us',
-//     'T & C',
-//     'Log Out'
-//   ];
+  // Show error message to user
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        duration: Duration(seconds: 4),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
-//   void choiceAction(String choice) {
-//     if (choice == _menuOptions[0]) {
-//       Navigator.push(
-//           context,
-//           MaterialPageRoute(
-//               builder: (context) => HelpScreen(index3: widget.index)));
-//     } else if (choice == _menuOptions[1]) {
-//       Navigator.push(
-//           context,
-//           MaterialPageRoute(
-//               builder: (context) => AboutUs(index3: widget.index)));
-//     } else if (choice == _menuOptions[2]) {
-//       Navigator.push(
-//           context,
-//           MaterialPageRoute(
-//               builder: (context) => ContactUs(index3: widget.index)));
-//     } else if (choice == _menuOptions[3]) {
-//       Navigator.push(
-//           context,
-//           MaterialPageRoute(
-//               builder: (context) => TermsAndConditions(index3: widget.index)));
-//     } else if (choice == _menuOptions[4]) {
-//       if (!mounted) return;
-//       _storage.clear();
-//       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-//         MaterialPageRoute(builder: (context) => CodeVerificationScreen()),
-//         (route) => false,
-//       );
-//     }
-//   }
+  // SIDE MENU BAR UI
+  List<String> _menuOptions = [
+    'Help',
+    'About Us',
+    'Contact Us',
+    'T & C',
+    'Log Out'
+  ];
 
-//   void _initializeAnimations() {
-//     _pulseController = AnimationController(
-//       duration: Duration(milliseconds: 1000),
-//       vsync: this,
-//     );
-//     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-//       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-//     );
-//   }
+  void choiceAction(String choice) {
+    if (choice == _menuOptions[0]) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => HelpScreen(index3: widget.index)));
+    } else if (choice == _menuOptions[1]) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => AboutUs(index3: widget.index)));
+    } else if (choice == _menuOptions[2]) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ContactUs(index3: widget.index)));
+    } else if (choice == _menuOptions[3]) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => TermsAndConditions(index3: widget.index)));
+    } else if (choice == _menuOptions[4]) {
+      if (!mounted) return;
+      _storage.clear();
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => CodeVerificationScreen()),
+        (route) => false,
+      );
+    }
+  }
 
-//   Future<void> _requestCameraPermission() async {
-//     final status = await Permission.camera.request();
-//     if (status.isDenied) {
-//       _showPermissionDialog();
-//     }
-//   }
+  void _initializeAnimations() {
+    _pulseController = AnimationController(
+      duration: Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
 
-//   void _showPermissionDialog() {
-//     showDialog(
-//       context: context,
-//       builder: (context) => AlertDialog(
-//         title: Text('Camera Permission Required'),
-//         content: Text('This app needs camera access to scan barcodes.'),
-//         actions: [
-//           TextButton(
-//               onPressed: () => Navigator.pop(context), child: Text('Cancel')),
-//           TextButton(
-//             onPressed: () {
-//               Navigator.pop(context);
-//               openAppSettings();
-//             },
-//             child: Text('Settings'),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
+  Future<void> _requestCameraPermission() async {
+    final status = await Permission.camera.request();
+    if (status.isDenied) {
+      _showPermissionDialog();
+    }
+  }
 
-//   void _handleBarcodeDetection(BarcodeCapture capture) {
-//     if (!isScanning || _isProcessing || imeiList.isEmpty) return;
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Camera Permission Required'),
+        content: Text('This app needs camera access to scan barcodes.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: Text('Settings'),
+          ),
+        ],
+      ),
+    );
+  }
 
-//     final List<Barcode> barcodes = capture.barcodes;
-//     if (barcodes.isEmpty) return;
+  // Updated barcode detection with new logic
+  void _handleBarcodeDetection(BarcodeCapture capture) {
+    if (!isScanning || _isProcessing || deviceList.isEmpty) return;
 
-//     // Process all barcodes in the frame
-//     _isProcessing = true;
+    final List<Barcode> barcodes = capture.barcodes;
+    if (barcodes.isEmpty) return;
 
-//     bool foundMatch = false;
-//     for (final barcode in barcodes) {
-//       final String code = barcode.rawValue ?? '';
+    _isProcessing = true;
 
-//       if (_isDuplicateBarcode(code) || !_isValidDeviceBarcode(code)) {
-//         continue;
-//       }
+    bool foundMatch = false;
+    String scannedCode = '';
 
-//       // Check if this barcode matches any IMEI in the list
-//       IMEIItem? matchedIMEI = _findMatchingIMEI(code);
+    for (final barcode in barcodes) {
+      final String code = barcode.rawValue ?? '';
+      scannedCode = code;
 
-//       if (matchedIMEI != null && !matchedIMEI.isVerified) {
-//         // Mark as verified
-//         setState(() {
-//           matchedIMEI.isVerified = true;
-//           matchedIMEI.verificationTime = DateTime.now();
-//         });
+      if (_isDuplicateBarcode(code) || !_isValidDeviceBarcode(code)) {
+        continue;
+      }
 
-//         // Add to scanned items
-//         _addScannedItem(code, matchedIMEI);
+      // Check if this barcode matches any device in the list
+      DeviceItem? matchedDevice = _findMatchingDevice(code);
 
-//         // Show success message
-//         _showVerificationSuccess(matchedIMEI);
+      if (matchedDevice != null) {
+        if (!matchedDevice.serialized) {
+          // This shouldn't happen as non-serialized items don't have scannable identifiers
+          _showNonSerializedDeviceMessage(matchedDevice);
+          break;
+        }
 
-//         foundMatch = true;
-//         print('IMEI verified: ${matchedIMEI.imei} - ${matchedIMEI.model}');
-//         break; // Process one match per scan
-//       }
-//     }
+        if (!matchedDevice.isVerified) {
+          // Mark as verified
+          setState(() {
+            matchedDevice.isVerified = true;
+            matchedDevice.verificationTime = DateTime.now();
+          });
 
-//     if (!foundMatch) {
-//       // No matching IMEI found
-//       _showNoMatchFound();
-//     }
+          // Add to scanned items
+          _addScannedItem(code, matchedDevice);
 
-//     // Provide feedback and set cooldown
-//     _provideFeedback(foundMatch);
+          // Show success message
+          _showVerificationSuccess(matchedDevice);
 
-//     // Update last scan info
-//     lastScanTime = DateTime.now();
+          foundMatch = true;
+          print(
+              'Device verified: ${matchedDevice.model} (${matchedDevice.deviceType})');
+          break;
+        } else {
+          // Device already verified
+          _showAlreadyVerifiedMessage(matchedDevice);
+          foundMatch = true;
+          break;
+        }
+      }
+    }
 
-//     // Set cooldown
-//     setState(() => isScanning = false);
-//     _scanCooldownTimer?.cancel();
-//     _scanCooldownTimer = Timer(Duration(seconds: 2), () {
-//       if (mounted) {
-//         setState(() => isScanning = true);
-//         _isProcessing = false;
-//       }
-//     });
-//   }
+    if (!foundMatch && scannedCode.isNotEmpty) {
+      // No matching device found
+      _showNoMatchFound(scannedCode);
+    }
 
-//   IMEIItem? _findMatchingIMEI(String scannedCode) {
-//     // Check if scanned code matches any IMEI exactly
-//     for (IMEIItem item in imeiList) {
-//       if (item.imei == scannedCode) {
-//         return item;
-//       }
-//     }
+    // Provide feedback and set cooldown
+    _provideFeedback(foundMatch);
 
-//     // Additional matching logic if needed (e.g., partial matches)
-//     for (IMEIItem item in imeiList) {
-//       if (scannedCode.contains(item.imei) || item.imei.contains(scannedCode)) {
-//         return item;
-//       }
-//     }
+    // Update last scan info
+    lastScanTime = DateTime.now();
 
-//     return null;
-//   }
+    // Set cooldown
+    setState(() => isScanning = false);
+    _scanCooldownTimer?.cancel();
+    _scanCooldownTimer = Timer(Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => isScanning = true);
+        _isProcessing = false;
+      }
+    });
+  }
 
-//   void _showVerificationSuccess(IMEIItem imei) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(
-//         content: Row(
-//           children: [
-//             Icon(Icons.check_circle, color: Colors.white),
-//             SizedBox(width: 8),
-//             Expanded(
-//               child: Text(
-//                 'IMEI verified successfully!\n${imei.model}',
-//                 style:
-//                     TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-//               ),
-//             ),
-//           ],
-//         ),
-//         duration: Duration(seconds: 3),
-//         backgroundColor: Colors.green,
-//       ),
-//     );
-//   }
+  // Updated device matching logic
+  DeviceItem? _findMatchingDevice(String scannedCode) {
+    // First, try exact matches
+    for (DeviceItem item in deviceList) {
+      String? identifier = item.scannableIdentifier;
+      if (identifier != null && identifier == scannedCode) {
+        return item;
+      }
+    }
 
-//   void _showNoMatchFound() {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(
-//         content: Row(
-//           children: [
-//             Icon(Icons.warning, color: Colors.white),
-//             SizedBox(width: 8),
-//             Text('No matching IMEI found in inventory'),
-//           ],
-//         ),
-//         duration: Duration(seconds: 2),
-//         backgroundColor: Colors.red,
-//       ),
-//     );
-//   }
+    // Then, try partial matches (for cases where barcode contains the identifier)
+    for (DeviceItem item in deviceList) {
+      String? identifier = item.scannableIdentifier;
+      if (identifier != null &&
+          (scannedCode.contains(identifier) ||
+              identifier.contains(scannedCode))) {
+        return item;
+      }
+    }
 
-//   bool _isDuplicateBarcode(String code) {
-//     if (scannedBarcodes.contains(code)) return true;
+    return null;
+  }
 
-//     if (lastScannedBarcode == code && lastScanTime != null) {
-//       final timeDifference = DateTime.now().difference(lastScanTime!);
-//       if (timeDifference.inSeconds < 3) return true;
-//     }
+  // Updated success message to show device type
+  void _showVerificationSuccess(DeviceItem device) {
+    String deviceInfo = device.deviceType == 'IMEI Device'
+        ? 'IMEI: ${device.imei}'
+        : 'Serial: ${device.serialNo}';
 
-//     return false;
-//   }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Device verified successfully!\n${device.model}\n$deviceInfo',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        duration: Duration(seconds: 3),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
 
-//   bool _isValidDeviceBarcode(String code) {
-//     if (code.trim().isEmpty) return false;
-//     if (code.length == 15 && RegExp(r'^\d{15}$').hasMatch(code)) return true;
-//     if (code.length >= 8 &&
-//         code.length <= 20 &&
-//         RegExp(r'^[A-Z0-9]+$').hasMatch(code.toUpperCase())) return true;
-//     return false;
-//   }
+  // New message for non-serialized devices
+  void _showNonSerializedDeviceMessage(DeviceItem device) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.info, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'This item cannot be scanned individually:\n${device.model}\n(Non-serialized item)',
+              ),
+            ),
+          ],
+        ),
+        duration: Duration(seconds: 3),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
 
-//   void _addScannedItem(String barcode, IMEIItem imeiItem) {
-//     final ScannedItem item = ScannedItem(
-//       barcode: barcode,
-//       imei: imeiItem.imei,
-//       timestamp: DateTime.now(),
-//       deviceModel: imeiItem.model,
-//     );
+  // New message for already verified devices
+  void _showAlreadyVerifiedMessage(DeviceItem device) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.done_all, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Device already verified: ${device.model}'),
+          ],
+        ),
+        duration: Duration(seconds: 2),
+        backgroundColor: Colors.orange,
+      ),
+    );
+  }
 
-//     setState(() {
-//       scannedItems.add(item);
-//       scannedBarcodes.add(barcode);
-//     });
-//   }
+  // Updated no match message with more detail
+  void _showNoMatchFound(String scannedCode) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'No matching device found in inventory.',
+              ),
+            ),
+          ],
+        ),
+        duration: Duration(seconds: 3),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
-//   void _provideFeedback(bool success) {
-//     Vibration.vibrate(duration: success ? 100 : 200);
+  bool _isDuplicateBarcode(String code) {
+    if (scannedBarcodes.contains(code)) return true;
 
-//     if (success) {
-//       _pulseController.forward().then((_) => _pulseController.reverse());
-//     }
-//   }
+    if (lastScannedBarcode == code && lastScanTime != null) {
+      final timeDifference = DateTime.now().difference(lastScanTime!);
+      if (timeDifference.inSeconds < 3) return true;
+    }
 
-//   void _toggleFlash() {
-//     setState(() => flashEnabled = !flashEnabled);
-//     cameraController.toggleTorch();
-//   }
+    return false;
+  }
 
-//   @override
-//   void dispose() {
-//     _scanCooldownTimer?.cancel();
-//     cameraController.dispose();
-//     _pulseController.dispose();
-//     super.dispose();
-//   }
+  bool _isValidDeviceBarcode(String code) {
+    if (code.trim().isEmpty) return false;
+    if (code.length == 15 && RegExp(r'^\d{15}$').hasMatch(code)) return true;
+    if (code.length >= 8 &&
+        code.length <= 20 &&
+        RegExp(r'^[A-Z0-9]+$').hasMatch(code.toUpperCase())) return true;
+    return false;
+  }
 
-//   get verifiedCount => imeiList.where((item) => item.isVerified).length;
-//   get totalCount => imeiList.length;
+  // Updated method to add scanned items
+  void _addScannedItem(String barcode, DeviceItem device) {
+    final ScannedItem item = ScannedItem(
+      barcode: barcode,
+      identifier: device.scannableIdentifier ?? '',
+      timestamp: DateTime.now(),
+      deviceModel: device.model,
+      deviceType: device.deviceType,
+    );
 
-//   @override
-//   Widget build(BuildContext context) {
-//     Size size = MediaQuery.of(context).size;
+    setState(() {
+      scannedItems.add(item);
+      scannedBarcodes.add(barcode);
+    });
+  }
 
-//     return Scaffold(
-//       appBar: AppBar(
-//         backgroundColor: appbarBgColor,
-//         toolbarHeight: Responsive.isMobileSmall(context) ||
-//                 Responsive.isMobileMedium(context) ||
-//                 Responsive.isMobileLarge(context)
-//             ? 40
-//             : Responsive.isTabletPortrait(context)
-//                 ? 80
-//                 : 90,
-//         automaticallyImplyLeading: false,
-//         title: Row(
-//           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//           children: [
-//             SizedBox(
-//               width: Responsive.isMobileSmall(context) ||
-//                       Responsive.isMobileMedium(context) ||
-//                       Responsive.isMobileLarge(context)
-//                   ? 90.0
-//                   : Responsive.isTabletPortrait(context)
-//                       ? 150
-//                       : 170,
-//               height: Responsive.isMobileSmall(context) ||
-//                       Responsive.isMobileMedium(context) ||
-//                       Responsive.isMobileLarge(context)
-//                   ? 40.0
-//                   : Responsive.isTabletPortrait(context)
-//                       ? 120
-//                       : 100,
-//               child: Image.asset('assets/images/iCheck_logo_2024.png',
-//                   fit: BoxFit.contain),
-//             ),
-//             SizedBox(width: size.width * 0.25),
-//             SizedBox(
-//               width: Responsive.isMobileSmall(context) ||
-//                       Responsive.isMobileMedium(context) ||
-//                       Responsive.isMobileLarge(context)
-//                   ? 90.0
-//                   : Responsive.isTabletPortrait(context)
-//                       ? 150
-//                       : 170,
-//               height: Responsive.isMobileSmall(context) ||
-//                       Responsive.isMobileMedium(context) ||
-//                       Responsive.isMobileLarge(context)
-//                   ? 40.0
-//                   : Responsive.isTabletPortrait(context)
-//                       ? 120
-//                       : 100,
-//               child: userObj != null && userObj!['CompanyProfileImage'] != null
-//                   ? CachedNetworkImage(
-//                       imageUrl: userObj!['CompanyProfileImage'],
-//                       placeholder: (context, url) => Text("..."),
-//                       errorWidget: (context, url, error) => Icon(Icons.error),
-//                     )
-//                   : Text(""),
-//             ),
-//           ],
-//         ),
-//         actions: <Widget>[
-//           PopupMenuButton<String>(
-//             onSelected: choiceAction,
-//             itemBuilder: (BuildContext context) {
-//               return _menuOptions.map((String choice) {
-//                 return PopupMenuItem<String>(
-//                   value: choice,
-//                   child: Text(choice,
-//                       style: TextStyle(
-//                           fontWeight: FontWeight.w400,
-//                           fontSize: Responsive.isMobileSmall(context)
-//                               ? 15
-//                               : Responsive.isMobileMedium(context) ||
-//                                       Responsive.isMobileLarge(context)
-//                                   ? 17
-//                                   : Responsive.isTabletPortrait(context)
-//                                       ? size.width * 0.025
-//                                       : size.width * 0.018)),
-//                 );
-//               }).toList();
-//             },
-//           )
-//         ],
-//       ),
-//       backgroundColor: Colors.grey[50],
-//       body: SafeArea(
-//         child: Column(
-//           children: [
-//             Container(
-//               width: double.infinity,
-//               padding: EdgeInsets.all(10),
-//               decoration: BoxDecoration(
-//                 color: Colors.white,
-//                 borderRadius: BorderRadius.only(
-//                     bottomLeft: Radius.circular(30),
-//                     bottomRight: Radius.circular(30)),
-//                 boxShadow: [
-//                   BoxShadow(
-//                       color: Colors.grey.withOpacity(0.1),
-//                       spreadRadius: 2,
-//                       blurRadius: 10,
-//                       offset: Offset(0, 3))
-//                 ],
-//               ),
-//               child: Row(
-//                 children: [
-//                   IconButton(
-//                     icon: Icon(Icons.arrow_back,
-//                         color: screenHeadingColor,
-//                         size: Responsive.isMobileSmall(context)
-//                             ? 20
-//                             : Responsive.isMobileMedium(context) ||
-//                                     Responsive.isMobileLarge(context)
-//                                 ? 24
-//                                 : Responsive.isTabletPortrait(context)
-//                                     ? 31
-//                                     : 35),
-//                     onPressed: () => Navigator.of(context).pop(),
-//                   ),
-//                   Expanded(
-//                     flex: 6,
-//                     child: Text("IMEI Verification",
-//                         style: TextStyle(
-//                             fontWeight: FontWeight.bold,
-//                             color: screenHeadingColor,
-//                             fontSize: Responsive.isMobileSmall(context)
-//                                 ? 22
-//                                 : Responsive.isMobileMedium(context) ||
-//                                         Responsive.isMobileLarge(context)
-//                                     ? 26
-//                                     : Responsive.isTabletPortrait(context)
-//                                         ? 28
-//                                         : 32),
-//                         textAlign: TextAlign.center),
-//                   ),
-//                   // Add refresh button
-//                   // IconButton(
-//                   //   icon: Icon(Icons.refresh,
-//                   //       color: screenHeadingColor,
-//                   //       size: Responsive.isMobileSmall(context)
-//                   //           ? 20
-//                   //           : Responsive.isMobileMedium(context) ||
-//                   //                   Responsive.isMobileLarge(context)
-//                   //               ? 24
-//                   //               : Responsive.isTabletPortrait(context)
-//                   //                   ? 31
-//                   //                   : 35),
-//                   //   onPressed: refreshIMEIList,
-//                   //   tooltip: 'Refresh IMEI List',
-//                   // ),
-//                 ],
-//               ),
-//             ),
-//             SizedBox(height: 10),
+  void _provideFeedback(bool success) {
+    Vibration.vibrate(duration: success ? 100 : 200);
 
-//             // Camera Scanner View
-//             Expanded(
-//               flex: 8,
-//               child: Container(
-//                 margin: EdgeInsets.symmetric(horizontal: 20),
-//                 decoration: BoxDecoration(
-//                   borderRadius: BorderRadius.circular(20),
-//                   boxShadow: [
-//                     BoxShadow(
-//                         color: Colors.black.withOpacity(0.3),
-//                         blurRadius: 10,
-//                         offset: Offset(0, 5))
-//                   ],
-//                 ),
-//                 child: ClipRRect(
-//                   borderRadius: BorderRadius.circular(20),
-//                   child: Stack(
-//                     children: [
-//                       MobileScanner(
-//                           controller: cameraController,
-//                           onDetect: _handleBarcodeDetection),
-//                       Container(
-//                         decoration: BoxDecoration(
-//                             border: Border.all(color: Colors.transparent)),
-//                         child: Stack(
-//                           children: [
-//                             Container(
-//                                 decoration: BoxDecoration(
-//                                     color: Colors.black.withOpacity(0.5))),
-//                             Center(
-//                               child: AnimatedBuilder(
-//                                 animation: _pulseAnimation,
-//                                 builder: (context, child) {
-//                                   return Transform.scale(
-//                                     scale: _pulseAnimation.value,
-//                                     child: Container(
-//                                       width: 300,
-//                                       height: 250,
-//                                       decoration: BoxDecoration(
-//                                         border: Border.all(
-//                                             color: _isProcessing
-//                                                 ? Colors.orange
-//                                                 : isScanning
-//                                                     ? Colors.green
-//                                                     : Colors.red,
-//                                             width: 3),
-//                                         borderRadius: BorderRadius.circular(12),
-//                                       ),
-//                                     ),
-//                                   );
-//                                 },
-//                               ),
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                       Positioned(
-//                         top: 20,
-//                         right: 20,
-//                         child: Container(
-//                           padding:
-//                               EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-//                           decoration: BoxDecoration(
-//                               color: _isProcessing
-//                                   ? Colors.orange
-//                                   : isScanning
-//                                       ? Colors.green
-//                                       : Colors.red,
-//                               borderRadius: BorderRadius.circular(20)),
-//                           child: Row(
-//                             mainAxisSize: MainAxisSize.min,
-//                             children: [
-//                               Icon(
-//                                   _isProcessing
-//                                       ? Icons.hourglass_empty
-//                                       : isScanning
-//                                           ? Icons.camera_alt
-//                                           : Icons.pause,
-//                                   color: Colors.white,
-//                                   size: 16),
-//                               SizedBox(width: 4),
-//                               Text(
-//                                   _isProcessing
-//                                       ? 'Processing...'
-//                                       : isScanning
-//                                           ? 'Scanning...'
-//                                           : 'Cooldown',
-//                                   style: TextStyle(
-//                                       color: Colors.white, fontSize: 12)),
-//                             ],
-//                           ),
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//             ),
-//             SizedBox(height: 20),
+    if (success) {
+      _pulseController.forward().then((_) => _pulseController.reverse());
+    }
+  }
 
-//             // Instruction Text
-//             Text(
-//                 'Point camera at device barcode to verify IMEI against inventory',
-//                 textAlign: TextAlign.center,
-//                 style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-//             SizedBox(height: 10),
+  void _toggleFlash() {
+    setState(() => flashEnabled = !flashEnabled);
+    cameraController.toggleTorch();
+  }
 
-//             // Verification Progress
-//             Container(
-//               margin: EdgeInsets.symmetric(horizontal: 20),
-//               padding: EdgeInsets.all(20),
-//               decoration: BoxDecoration(
-//                 color: Colors.white,
-//                 borderRadius: BorderRadius.circular(15),
-//                 boxShadow: [
-//                   BoxShadow(
-//                       color: Colors.black.withOpacity(0.1),
-//                       blurRadius: 10,
-//                       offset: Offset(0, 2))
-//                 ],
-//               ),
-//               child: Column(
-//                 children: [
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                     children: [
-//                       Text('Scanning Verified: $verifiedCount / $totalCount',
-//                           style: TextStyle(
-//                               fontSize: 16, fontWeight: FontWeight.bold)),
-//                       Row(
-//                         children: [
-//                           IconButton(
-//                               onPressed: _toggleFlash,
-//                               icon: Icon(
-//                                   flashEnabled
-//                                       ? Icons.flash_on
-//                                       : Icons.flash_off,
-//                                   color: flashEnabled
-//                                       ? Colors.orange
-//                                       : Colors.grey),
-//                               tooltip: 'Toggle flash'),
-//                         ],
-//                       ),
-//                     ],
-//                   ),
-//                   SizedBox(height: 10),
-//                   LinearProgressIndicator(
-//                     value: totalCount > 0 ? verifiedCount / totalCount : 0,
-//                     backgroundColor: Colors.grey[300],
-//                     valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-//                     minHeight: 8,
-//                   ),
-//                   SizedBox(height: 8),
-//                   Text('${totalCount - verifiedCount} items remaining',
-//                       style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-//                 ],
-//               ),
-//             ),
-//             SizedBox(height: 20),
+  @override
+  void dispose() {
+    _scanCooldownTimer?.cancel();
+    cameraController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
 
-//             // Action Buttons
-//             Expanded(
-//               flex: 2,
-//               child: Column(
-//                 mainAxisAlignment: MainAxisAlignment.end,
-//                 children: [
-//                   _buildButton(
-//                     'View Verification Results',
-//                     actionBtnColor,
-//                     // imeiList.isNotEmpty
-//                     //     ? () => Navigator.push(
-//                     //         context,
-//                     //         MaterialPageRoute(
-//                     //             builder: (context) => VerificationResultsScreen(
-//                     //                 index: widget.index, imeiList: imeiList)))
-//                     //     : null,
-//                     imeiList.isNotEmpty
-//                         ? () async {
-//                             final result = await Navigator.push<List<IMEIItem>>(
-//                               context,
-//                               MaterialPageRoute(
-//                                 builder: (context) => VerificationResultsScreen(
-//                                   index: widget.index,
-//                                   imeiList: imeiList,
-//                                 ),
-//                               ),
-//                             );
+  // Updated progress calculation
+  get verifiedCount =>
+      deviceList.where((item) => item.serialized && item.isVerified).length;
+  get scannableDeviceCount =>
+      deviceList.where((item) => item.scannableIdentifier != null).length;
+  get totalCount => deviceList.length;
 
-//                             if (result != null) {
-//                               setState(() {
-//                                 imeiList = result;
-//                               });
-//                               print(
-//                                   'Updated IMEI list received: ${imeiList.where((item) => item.isVerified).length}/${imeiList.length}');
-//                             }
-//                           }
-//                         : null,
-//                   ),
-//                   SizedBox(height: 15),
-//                 ],
-//               ),
-//             ),
-//             SizedBox(height: 30),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
+  @override
+  Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
 
-//   Widget _buildButton(String text, Color color, VoidCallback? onPressed) {
-//     return Container(
-//       width: double.infinity,
-//       margin: EdgeInsets.symmetric(horizontal: 20),
-//       child: ElevatedButton(
-//         onPressed: onPressed,
-//         style: ElevatedButton.styleFrom(
-//           backgroundColor: onPressed != null ? color : Colors.grey[300],
-//           foregroundColor: onPressed != null
-//               ? (color == Colors.grey ? Colors.grey[600] : Colors.white)
-//               : Colors.grey[600],
-//           padding: EdgeInsets.symmetric(vertical: 15),
-//           shape:
-//               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-//           elevation: onPressed != null ? 2 : 0,
-//         ),
-//         child: Text(text,
-//             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-//       ),
-//     );
-//   }
-// }
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: appbarBgColor,
+        toolbarHeight: Responsive.isMobileSmall(context) ||
+                Responsive.isMobileMedium(context) ||
+                Responsive.isMobileLarge(context)
+            ? 40
+            : Responsive.isTabletPortrait(context)
+                ? 80
+                : 90,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            SizedBox(
+              width: Responsive.isMobileSmall(context) ||
+                      Responsive.isMobileMedium(context) ||
+                      Responsive.isMobileLarge(context)
+                  ? 90.0
+                  : Responsive.isTabletPortrait(context)
+                      ? 150
+                      : 170,
+              height: Responsive.isMobileSmall(context) ||
+                      Responsive.isMobileMedium(context) ||
+                      Responsive.isMobileLarge(context)
+                  ? 40.0
+                  : Responsive.isTabletPortrait(context)
+                      ? 120
+                      : 100,
+              child: Image.asset('assets/images/iCheck_logo_2024.png',
+                  fit: BoxFit.contain),
+            ),
+            SizedBox(width: size.width * 0.25),
+            SizedBox(
+              width: Responsive.isMobileSmall(context) ||
+                      Responsive.isMobileMedium(context) ||
+                      Responsive.isMobileLarge(context)
+                  ? 90.0
+                  : Responsive.isTabletPortrait(context)
+                      ? 150
+                      : 170,
+              height: Responsive.isMobileSmall(context) ||
+                      Responsive.isMobileMedium(context) ||
+                      Responsive.isMobileLarge(context)
+                  ? 40.0
+                  : Responsive.isTabletPortrait(context)
+                      ? 120
+                      : 100,
+              child: userObj != null && userObj!['CompanyProfileImage'] != null
+                  ? CachedNetworkImage(
+                      imageUrl: userObj!['CompanyProfileImage'],
+                      placeholder: (context, url) => Text("..."),
+                      errorWidget: (context, url, error) => Icon(Icons.error),
+                    )
+                  : Text(""),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            onSelected: choiceAction,
+            itemBuilder: (BuildContext context) {
+              return _menuOptions.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w400,
+                          fontSize: Responsive.isMobileSmall(context)
+                              ? 15
+                              : Responsive.isMobileMedium(context) ||
+                                      Responsive.isMobileLarge(context)
+                                  ? 17
+                                  : Responsive.isTabletPortrait(context)
+                                      ? size.width * 0.025
+                                      : size.width * 0.018)),
+                );
+              }).toList();
+            },
+          )
+        ],
+      ),
+      backgroundColor: Colors.grey[50],
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30)),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 2,
+                      blurRadius: 10,
+                      offset: Offset(0, 3))
+                ],
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back,
+                        color: screenHeadingColor,
+                        size: Responsive.isMobileSmall(context)
+                            ? 20
+                            : Responsive.isMobileMedium(context) ||
+                                    Responsive.isMobileLarge(context)
+                                ? 24
+                                : Responsive.isTabletPortrait(context)
+                                    ? 31
+                                    : 35),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  Expanded(
+                    flex: 6,
+                    child: Text("Device Verification",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: screenHeadingColor,
+                            fontSize: Responsive.isMobileSmall(context)
+                                ? 22
+                                : Responsive.isMobileMedium(context) ||
+                                        Responsive.isMobileLarge(context)
+                                    ? 26
+                                    : Responsive.isTabletPortrait(context)
+                                        ? 28
+                                        : 32),
+                        textAlign: TextAlign.center),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 10),
+
+            // Camera Scanner View
+            Expanded(
+              flex: 8,
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: Offset(0, 5))
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      MobileScanner(
+                          controller: cameraController,
+                          onDetect: _handleBarcodeDetection),
+                      Container(
+                        decoration: BoxDecoration(
+                            border: Border.all(color: Colors.transparent)),
+                        child: Stack(
+                          children: [
+                            Container(
+                                decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.5))),
+                            Center(
+                              child: AnimatedBuilder(
+                                animation: _pulseAnimation,
+                                builder: (context, child) {
+                                  return Transform.scale(
+                                    scale: _pulseAnimation.value,
+                                    child: Container(
+                                      width: 300,
+                                      height: 250,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                            color: _isProcessing
+                                                ? Colors.orange
+                                                : isScanning
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                            width: 3),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: 20,
+                        right: 20,
+                        child: Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                              color: _isProcessing
+                                  ? Colors.orange
+                                  : isScanning
+                                      ? Colors.green
+                                      : Colors.red,
+                              borderRadius: BorderRadius.circular(20)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                  _isProcessing
+                                      ? Icons.hourglass_empty
+                                      : isScanning
+                                          ? Icons.camera_alt
+                                          : Icons.pause,
+                                  color: Colors.white,
+                                  size: 16),
+                              SizedBox(width: 4),
+                              Text(
+                                  _isProcessing
+                                      ? 'Processing...'
+                                      : isScanning
+                                          ? 'Scanning...'
+                                          : 'Cooldown',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+
+            // Instruction Text
+            Text(
+                'Point camera at device barcode/IMEI to verify against inventory',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+            SizedBox(height: 10),
+
+            // Updated Verification Progress
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: Offset(0, 2))
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                'Scannable Devices: $verifiedCount / $scannableDeviceCount',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
+                            SizedBox(height: 10),
+                            Text('Total Items: $totalCount',
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.grey[600])),
+                            SizedBox(height: 10),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                              onPressed: _toggleFlash,
+                              icon: Icon(
+                                  flashEnabled
+                                      ? Icons.flash_on
+                                      : Icons.flash_off,
+                                  color: flashEnabled
+                                      ? Colors.orange
+                                      : Colors.grey),
+                              tooltip: 'Toggle flash'),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  LinearProgressIndicator(
+                    value: scannableDeviceCount > 0
+                        ? verifiedCount / scannableDeviceCount
+                        : 0,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    minHeight: 8,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                      '${scannableDeviceCount - verifiedCount} scannable items remaining',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+
+            // Action Buttons
+            Expanded(
+              flex: 2,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _buildButton(
+                    'View Verification Results',
+                    actionBtnColor,
+                    deviceList.isNotEmpty
+                        ? () async {
+                            final result =
+                                await Navigator.push<List<DeviceItem>>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    VerificationResultsTwoScreen(
+                                  index: widget.index,
+                                  deviceList:
+                                      deviceList, // Pass deviceList instead of imeiList
+                                ),
+                              ),
+                            );
+
+                            if (result != null) {
+                              setState(() {
+                                deviceList = result;
+                              });
+                              print(
+                                  'Updated device list received: ${deviceList.where((item) => item.isVerified).length}/${deviceList.length}');
+                            }
+                          }
+                        : null,
+                  ),
+                  SizedBox(height: 15),
+                ],
+              ),
+            ),
+            SizedBox(height: 30),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton(String text, Color color, VoidCallback? onPressed) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 20),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: onPressed != null ? color : Colors.grey[300],
+          foregroundColor: onPressed != null
+              ? (color == Colors.grey ? Colors.grey[600] : Colors.white)
+              : Colors.grey[600],
+          padding: EdgeInsets.symmetric(vertical: 15),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: onPressed != null ? 2 : 0,
+        ),
+        child: Text(text,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+}

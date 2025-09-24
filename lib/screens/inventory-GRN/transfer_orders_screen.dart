@@ -3,14 +3,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:icheck_stelacom/constants.dart';
-import 'package:icheck_stelacom/models/transfer_order.dart';
 import 'package:icheck_stelacom/responsive.dart';
+import 'package:icheck_stelacom/screens/Inventory-GRN/order_details_screen.dart';
 import 'package:icheck_stelacom/screens/enroll/code_verification.dart';
-import 'package:icheck_stelacom/screens/inventory-GRN/order_details_screen.dart';
 import 'package:icheck_stelacom/screens/menu/about_us.dart';
+import 'package:icheck_stelacom/screens/menu/contact_us.dart';
 import 'package:icheck_stelacom/screens/menu/help.dart';
 import 'package:icheck_stelacom/screens/menu/terms_conditions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:icheck_stelacom/models/transfer_order2.dart';
 
 class TransferOrdersScreen extends StatefulWidget {
   final int index;
@@ -22,19 +23,22 @@ class TransferOrdersScreen extends StatefulWidget {
 }
 
 class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
-  List<TransferOrder> transferOrders = [];
-  List<TransferOrder> filteredOrders = [];
+  // List<TransferOrder> transferOrders = [];
+  // List<TransferOrder> filteredOrders = [];
   String selectedStatus = 'All';
   bool isLoading = true;
   Map<String, dynamic>? userObj;
   String employeeCode = "";
   String userData = "";
   late SharedPreferences _storage;
+  List<TransferOrder2> transferOrdersNew = [];
+  List<TransferOrder2> filteredOrdersNew = [];
 
   @override
   void initState() {
     super.initState();
     loadTransferOrders();
+    getSharedPrefs();
   }
 
   Future<void> getSharedPrefs() async {
@@ -49,14 +53,16 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
   Future<void> loadTransferOrders() async {
     try {
       final String response =
-          await rootBundle.loadString('assets/json/transfer_orders.json');
+          // await rootBundle.loadString('assets/json/transfer_orders.json');
+          await rootBundle.loadString('assets/json/transfer_orders2.json');
+
       final data = json.decode(response);
 
       setState(() {
-        transferOrders = (data['transfer_orders'] as List)
-            .map((order) => TransferOrder.fromJson(order))
+        transferOrdersNew = (data['transfer_orders'] as List)
+            .map((order) => TransferOrder2.fromJson(order))
             .toList();
-        filteredOrders = transferOrders;
+        filteredOrdersNew = transferOrdersNew;
         isLoading = false;
       });
     } catch (e) {
@@ -73,42 +79,12 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
     setState(() {
       selectedStatus = status;
       if (status == 'All') {
-        filteredOrders = transferOrders;
+        filteredOrdersNew = transferOrdersNew;
       } else {
-        filteredOrders =
-            transferOrders.where((order) => order.status == status).toList();
+        filteredOrdersNew =
+            transferOrdersNew.where((order) => order.status == status).toList();
       }
     });
-  }
-
-  Color getStatusColor(String status) {
-    switch (status) {
-      case 'Assigned':
-        return Colors.orange;
-      case 'In-Transit':
-        return Colors.blue;
-      case 'Received':
-        return Colors.green;
-      case 'Pending Verification':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData getStatusIcon(String status) {
-    switch (status) {
-      case 'Assigned':
-        return Icons.assignment;
-      case 'In-Transit':
-        return Icons.local_shipping;
-      case 'Received':
-        return Icons.check_circle;
-      case 'Pending Verification':
-        return Icons.pending;
-      default:
-        return Icons.help;
-    }
   }
 
   // SIDE MENU BAR UI
@@ -141,6 +117,14 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
         }),
       );
     } else if (choice == _menuOptions[2]) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) {
+          return ContactUs(
+            index3: widget.index,
+          );
+        }),
+      );
     } else if (choice == _menuOptions[3]) {
       Navigator.push(
         context,
@@ -328,13 +312,6 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
                             )
                           ],
                         ),
-                        // Text(
-                        //   'Manage incoming transfers for GRN process',
-                        //   style: TextStyle(
-                        //     fontSize: 16,
-                        //     color: Colors.grey.shade600,
-                        //   ),
-                        // ),
                       ],
                     ),
                   ),
@@ -346,13 +323,7 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: [
-                          'All',
-                          'Assigned',
-                          'In-Transit',
-                          'Received',
-                          'Pending Verification'
-                        ]
+                        children: ['All', 'In-Transit', 'Received', 'Partial']
                             .map((status) => Padding(
                                   padding: EdgeInsets.only(right: 8),
                                   child: FilterChip(
@@ -379,7 +350,7 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
                         Icon(Icons.list_alt, color: Color(0xFFFF8C00)),
                         SizedBox(width: 8),
                         Text(
-                          '${filteredOrders.length} Transfer Orders',
+                          '${filteredOrdersNew.length} Transfer Orders',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -391,7 +362,7 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
 
                   // Orders List
                   Expanded(
-                    child: filteredOrders.isEmpty
+                    child: filteredOrdersNew.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -417,9 +388,9 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
                             color: Color(0xFFFF8C00),
                             child: ListView.builder(
                               padding: EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: filteredOrders.length,
+                              itemCount: filteredOrdersNew.length,
                               itemBuilder: (context, index) {
-                                final order = filteredOrders[index];
+                                final order = filteredOrdersNew[index];
                                 return TransferOrderCard(
                                   order: order,
                                   onTap: () => navigateToOrderDetails(order),
@@ -434,11 +405,12 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
     );
   }
 
-  void navigateToOrderDetails(TransferOrder order) {
+  void navigateToOrderDetails(TransferOrder2 order) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => OrderDetailsScreen(order: order),
+        builder: (context) =>
+            OrderDetailsScreenTwo(order: order, index: widget.index),
       ),
     );
   }
@@ -446,7 +418,7 @@ class _TransferOrdersScreenState extends State<TransferOrdersScreen> {
 
 // Transfer Order Card Widget
 class TransferOrderCard extends StatelessWidget {
-  final TransferOrder order;
+  final TransferOrder2 order;
   final VoidCallback onTap;
 
   const TransferOrderCard({
@@ -577,13 +549,15 @@ class TransferOrderCard extends StatelessWidget {
   Color getStatusColor(String status) {
     switch (status) {
       case 'Assigned':
-        return Colors.blue;
+        return Colors.red;
       case 'In-Transit':
-        return Colors.orange;
-      case 'Received':
-        return Colors.green;
+        return Colors.blue;
+      case 'Partially Received':
+        return Color.fromARGB(255, 245, 161, 45);
       case 'Pending Verification':
-        return Colors.purple;
+        return Colors.grey;
+      case 'Received':
+        return Color.fromARGB(255, 55, 173, 59);
       default:
         return Colors.grey;
     }
@@ -597,8 +571,10 @@ class TransferOrderCard extends StatelessWidget {
         return Icons.local_shipping;
       case 'Received':
         return Icons.check_circle;
-      case 'Pending Verification':
-        return Icons.pending;
+      case 'Partially Received':
+        return Icons.hourglass_top;
+      case 'Verified':
+        return Icons.check_box;
       default:
         return Icons.help;
     }

@@ -14,7 +14,7 @@ import 'package:icheck_stelacom/screens/menu/about_us.dart';
 import 'package:icheck_stelacom/screens/menu/contact_us.dart';
 import 'package:icheck_stelacom/screens/menu/help.dart';
 import 'package:icheck_stelacom/screens/menu/terms_conditions.dart';
-import 'package:icheck_stelacom/providers/appstate_provieder.dart';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 import 'package:icheck_stelacom/responsive.dart';
 import '../../components/utils/custom_error_dialog.dart';
 import '../../components/utils/dialogs.dart';

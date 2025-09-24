@@ -7,7 +7,7 @@ import 'package:icheck_stelacom/screens/menu/contact_us.dart';
 import 'package:icheck_stelacom/screens/menu/help.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:icheck_stelacom/providers/appstate_provieder.dart';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../responsive.dart';

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:icheck_stelacom/screens/attendance-dashboard/dashboard.dart';
 import 'package:icheck_stelacom/constants.dart';
-import 'package:icheck_stelacom/screens/home/dashboard_Sample2.dart';
+import 'package:icheck_stelacom/screens/home/dashboard.dart';
 import 'package:icheck_stelacom/screens/profile/profile_home.dart';
-import 'package:icheck_stelacom/providers/appstate_provieder.dart';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 import 'package:icheck_stelacom/responsive.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';

@@ -191,7 +191,7 @@ class _VerificationResultsTwoScreenState
   // Show dialog for unverified item actions
   void _showUnverifiedItemActions(DeviceItem item) {
     if (!item.serialized) {
-      _showQuantityUpdateDialog(item);
+      _showQuantityUpdateDialogForNZ(item);
     } else {
       _showSerializedItemActions(item);
     }
@@ -253,7 +253,7 @@ class _VerificationResultsTwoScreenState
     );
   }
 
-  void _showQuantityUpdateDialog(DeviceItem item) {
+  void _showQuantityUpdateDialogForNonSerialized2(DeviceItem item) {
     TextEditingController quantityController = TextEditingController(
       text: item.quantityVerified.toString(),
     );
@@ -262,12 +262,105 @@ class _VerificationResultsTwoScreenState
     bool imagesCaptured = false;
     List<File> localAttachedImages = [];
     bool isValidQuantity = item.quantityVerified > 0;
+    String? selectedVarianceReason;
+
+    // Define variance reasons
+    final List<String> varianceReasons = [
+      'Damaged items',
+      'Missing items',
+      'Extra items found',
+      'Incorrect initial count',
+      'Items in different location',
+      'Other'
+    ];
+
+    // Function to show full-screen image
+    void _showFullScreenImage(File imageFile) {
+      // Dismiss keyboard before showing full-screen image
+      FocusScope.of(context).unfocus();
+
+      showDialog(
+        context: context,
+        barrierColor: Colors.black,
+        builder: (BuildContext context) {
+          return Dialog.fullscreen(
+            backgroundColor: Colors.black,
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    boundaryMargin: EdgeInsets.all(20),
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.file(
+                      imageFile,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // Ensure keyboard stays dismissed after closing
+                        FocusScope.of(context).unfocus();
+                      },
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 40,
+                  left: 20,
+                  right: 20,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Tap and drag to pan • Pinch to zoom',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ).then((_) {
+        // Additional safety: dismiss keyboard when dialog is completely closed
+        FocusScope.of(context).unfocus();
+      });
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            // Check if variance reason is needed
+            final enteredQuantity = int.tryParse(quantityController.text) ?? 0;
+            final needsVarianceReason =
+                isValidQuantity && enteredQuantity != item.quantity;
+
             return AlertDialog(
               title: Text('Update Verified Quantity'),
               content: SingleChildScrollView(
@@ -293,12 +386,45 @@ class _VerificationResultsTwoScreenState
                         setDialogState(() {
                           final newQuantity = int.tryParse(value) ?? 0;
                           isValidQuantity =
-                              newQuantity > 0 && newQuantity <= item.quantity!;
+                              newQuantity >= 0 && newQuantity <= item.quantity!;
+                          // Reset variance reason when quantity changes
+                          selectedVarianceReason = null;
                         });
                       },
                     ),
                     SizedBox(height: 20),
-                    // Divider(),
+
+                    // Show variance reason selection when quantity doesn't match
+                    if (needsVarianceReason) ...[
+                      Text(
+                        'Reason for Variance',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Column(
+                        children: varianceReasons.map((reason) {
+                          return RadioListTile<String>(
+                            title: Text(
+                              reason,
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            value: reason,
+                            groupValue: selectedVarianceReason,
+                            onChanged: (String? value) {
+                              setDialogState(() {
+                                selectedVarianceReason = value;
+                              });
+                            },
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          );
+                        }).toList(),
+                      ),
+                      SizedBox(height: 20),
+                    ],
 
                     Row(
                       children: [
@@ -314,41 +440,52 @@ class _VerificationResultsTwoScreenState
 
                     SizedBox(height: 12),
 
-                    // Single Camera button
+                    // Single Camera button - enabled and colored when valid quantity
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () async {
-                          try {
-                            final XFile? photo = await _picker.pickImage(
-                              source: ImageSource.camera,
-                              imageQuality: 80,
-                              maxWidth: 1024,
-                              maxHeight: 1024,
-                            );
+                        onPressed: isValidQuantity
+                            ? () async {
+                                try {
+                                  final XFile? photo = await _picker.pickImage(
+                                    source: ImageSource.camera,
+                                    imageQuality: 80,
+                                    maxWidth: 1024,
+                                    maxHeight: 1024,
+                                  );
 
-                            if (photo != null) {
-                              setDialogState(() {
-                                localAttachedImages.add(File(photo.path));
-                                imagesCaptured = true;
-                              });
-                            }
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error taking picture: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
+                                  if (photo != null) {
+                                    setDialogState(() {
+                                      localAttachedImages.add(File(photo.path));
+                                      imagesCaptured = true;
+                                    });
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error taking picture: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            : null, // Disabled when quantity invalid
                         icon: Icon(
                           Icons.camera_alt,
-                          color: Colors.grey,
+                          color: isValidQuantity ? Colors.green : Colors.grey,
                         ),
-                        label: Text('Take Photo'),
+                        label: Text(
+                          'Take Photo',
+                          style: TextStyle(
+                            color: isValidQuantity ? Colors.green : Colors.grey,
+                          ),
+                        ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.black54,
+                          side: BorderSide(
+                            color: isValidQuantity
+                                ? Colors.green
+                                : Colors.grey.shade400,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -397,15 +534,31 @@ class _VerificationResultsTwoScreenState
                                 margin: EdgeInsets.only(right: 8),
                                 child: Stack(
                                   children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(
-                                        image,
-                                        width: 60,
-                                        height: 60,
-                                        fit: BoxFit.cover,
+                                    // Make the image tappable for full-screen view
+                                    GestureDetector(
+                                      onTap: () => _showFullScreenImage(image),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.grey.shade300,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: Image.file(
+                                            image,
+                                            width: 60,
+                                            height: 60,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
                                       ),
                                     ),
+                                    // Close button
                                     Positioned(
                                       top: 2,
                                       right: 2,
@@ -438,7 +591,18 @@ class _VerificationResultsTwoScreenState
                             }).toList(),
                           ),
                         ),
-                      )
+                      ),
+
+                      // Add a hint text to show users they can tap to view
+                      SizedBox(height: 4),
+                      Text(
+                        'Tap image to view full screen',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -449,7 +613,10 @@ class _VerificationResultsTwoScreenState
                   child: Text('Cancel', style: TextStyle(color: Colors.red)),
                 ),
                 ElevatedButton(
-                  onPressed: (imagesCaptured && isValidQuantity)
+                  onPressed: (imagesCaptured &&
+                          isValidQuantity &&
+                          (!needsVarianceReason ||
+                              selectedVarianceReason != null))
                       ? () {
                           final newQuantity =
                               int.tryParse(quantityController.text) ?? 0;
@@ -461,7 +628,13 @@ class _VerificationResultsTwoScreenState
                               item.isVerified = true;
                               item.verificationTime = DateTime.now();
 
-                              item.varianceReason = "Image Attached";
+                              // Set variance reason
+                              if (newQuantity != item.quantity) {
+                                item.varianceReason =
+                                    selectedVarianceReason ?? "Unknown";
+                              } else {
+                                item.varianceReason = "Image Attached";
+                              }
                             });
 
                             _saveDeviceListToStorage();
@@ -484,9 +657,429 @@ class _VerificationResultsTwoScreenState
                             );
                           }
                         }
-                      : null, // Disabled when no image captured
+                      : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: imagesCaptured && isValidQuantity
+                    backgroundColor: imagesCaptured &&
+                            isValidQuantity &&
+                            (!needsVarianceReason ||
+                                selectedVarianceReason != null)
+                        ? actionBtnColor
+                        : Colors.grey,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text('Update'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showQuantityUpdateDialogForNZ(DeviceItem item) {
+    TextEditingController quantityController = TextEditingController(
+      text: item.quantityVerified.toString(),
+    );
+
+    // Add controller for variance reason text field
+    TextEditingController varianceReasonController = TextEditingController();
+
+    // Local state for this dialog
+    bool imagesCaptured = false;
+    List<File> localAttachedImages = [];
+    bool isValidQuantity = item.quantityVerified > 0;
+    String? selectedVarianceReason;
+
+    // Function to show full-screen image
+    void _showFullScreenImage(File imageFile) {
+      // Dismiss keyboard before showing full-screen image
+      FocusScope.of(context).unfocus();
+
+      showDialog(
+        context: context,
+        barrierColor: Colors.black,
+        builder: (BuildContext context) {
+          return Dialog.fullscreen(
+            backgroundColor: Colors.black,
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    boundaryMargin: EdgeInsets.all(20),
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.file(
+                      imageFile,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // Ensure keyboard stays dismissed after closing
+                        FocusScope.of(context).unfocus();
+                      },
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 40,
+                  left: 20,
+                  right: 20,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Tap and drag to pan • Pinch to zoom',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ).then((_) {
+        // Additional safety: dismiss keyboard when dialog is completely closed
+        FocusScope.of(context).unfocus();
+      });
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Check if variance reason is needed
+            final enteredQuantity = int.tryParse(quantityController.text) ?? 0;
+            final needsVarianceReason =
+                isValidQuantity && enteredQuantity != item.quantity;
+
+            return AlertDialog(
+              title: Text('Update Verified Quantity'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Model: ${item.model}'),
+                    SizedBox(height: 5),
+                    Text('Total Quantity: ${item.quantity}'),
+                    SizedBox(height: 5),
+                    Text('Currently Verified: ${item.quantityVerified}'),
+                    SizedBox(height: 20),
+                    TextField(
+                      controller: quantityController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Verified Quantity',
+                        border: OutlineInputBorder(),
+                        helperText: 'Enter quantity from 0 to ${item.quantity}',
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          final newQuantity = int.tryParse(value) ?? 0;
+                          isValidQuantity =
+                              newQuantity >= 0 && newQuantity <= item.quantity!;
+                          // Reset variance reason when quantity changes
+                          selectedVarianceReason = null;
+                          varianceReasonController.clear();
+                        });
+                      },
+                    ),
+                    SizedBox(height: 20),
+
+                    // Show variance reason text field when quantity doesn't match
+                    if (needsVarianceReason) ...[
+                      Text(
+                        'Reason for Variance',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      TextField(
+                        controller: varianceReasonController,
+                        decoration: InputDecoration(
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
+                            labelText: 'Enter variance reason',
+                            labelStyle: TextStyle(color: Colors.grey),
+                            border: OutlineInputBorder(),
+                            hintText:
+                                'e.g., Damaged items, Missing items, etc.',
+                            hintStyle: TextStyle(color: Colors.grey)),
+                        maxLines: 2,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            selectedVarianceReason =
+                                value.trim().isEmpty ? null : value;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 20),
+                    ],
+
+                    Row(
+                      children: [
+                        Text(
+                          'Capture Bulk Photo',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 12),
+
+                    // Single Camera button - enabled and colored when valid quantity
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: isValidQuantity
+                            ? () async {
+                                try {
+                                  final XFile? photo = await _picker.pickImage(
+                                    source: ImageSource.camera,
+                                    imageQuality: 80,
+                                    maxWidth: 1024,
+                                    maxHeight: 1024,
+                                  );
+
+                                  if (photo != null) {
+                                    setDialogState(() {
+                                      localAttachedImages.add(File(photo.path));
+                                      imagesCaptured = true;
+                                    });
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error taking picture: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            : null, // Disabled when quantity invalid
+                        icon: Icon(
+                          Icons.camera_alt,
+                          color: isValidQuantity ? Colors.green : Colors.grey,
+                        ),
+                        label: Text(
+                          'Take Photo',
+                          style: TextStyle(
+                            color: isValidQuantity ? Colors.green : Colors.grey,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: isValidQuantity
+                                ? Colors.green
+                                : Colors.grey.shade400,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 12),
+
+                    // Show "Image Captured" text when image is taken
+                    if (imagesCaptured) ...[
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Image Captured',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+
+                      // Display captured images
+                      SizedBox(
+                        height: 80,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: localAttachedImages
+                                .asMap()
+                                .entries
+                                .map((entry) {
+                              int index = entry.key;
+                              File image = entry.value;
+                              return Container(
+                                margin: EdgeInsets.only(right: 8),
+                                child: Stack(
+                                  children: [
+                                    // Make the image tappable for full-screen view
+                                    GestureDetector(
+                                      onTap: () => _showFullScreenImage(image),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.grey.shade300,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: Image.file(
+                                            image,
+                                            width: 60,
+                                            height: 60,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Close button
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setDialogState(() {
+                                            localAttachedImages.removeAt(index);
+                                            if (localAttachedImages.isEmpty) {
+                                              imagesCaptured = false;
+                                            }
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.all(2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.close,
+                                            size: 12,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+
+                      // Add a hint text to show users they can tap to view
+                      SizedBox(height: 4),
+                      Text(
+                        'Tap image to view full screen',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel', style: TextStyle(color: Colors.red)),
+                ),
+                ElevatedButton(
+                  onPressed: (imagesCaptured &&
+                          isValidQuantity &&
+                          (!needsVarianceReason ||
+                              selectedVarianceReason != null))
+                      ? () {
+                          final newQuantity =
+                              int.tryParse(quantityController.text) ?? 0;
+                          if (newQuantity >= 0 &&
+                              newQuantity <= item.quantity!) {
+                            setState(() {
+                              // Update the item
+                              item.quantityVerified = newQuantity;
+                              item.isVerified = true;
+                              item.verificationTime = DateTime.now();
+
+                              // Set variance reason
+                              if (newQuantity != item.quantity) {
+                                item.varianceReason =
+                                    selectedVarianceReason ?? "Unknown";
+                              } else {
+                                item.varianceReason = "Image Attached";
+                              }
+                            });
+
+                            _saveDeviceListToStorage();
+                            _updateDataSource();
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Quantity updated and image attached for ${item.model}'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Please enter a valid quantity (0-${item.quantity})'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: imagesCaptured &&
+                            isValidQuantity &&
+                            (!needsVarianceReason ||
+                                selectedVarianceReason != null)
                         ? actionBtnColor
                         : Colors.grey,
                     foregroundColor: Colors.white,
@@ -1086,7 +1679,6 @@ class _VerificationResultsTwoScreenState
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 12)),
                                           ),
-                                       
                                           DataColumn(
                                             label: Text('Verify\nStatus',
                                                 style: TextStyle(
@@ -1323,31 +1915,6 @@ class DeviceDataSource extends DataTableSource {
             ),
           ),
         ),
-
-        // Type Cell
-        // DataCell(
-        //   Container(
-        //     width: 50,
-        //     child: Container(
-        //       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        //       decoration: BoxDecoration(
-        //         color: item.serialized
-        //             ? Colors.purple.withOpacity(0.1)
-        //             : Colors.orange.withOpacity(0.1),
-        //         borderRadius: BorderRadius.circular(8),
-        //       ),
-        //       child: Text(
-        //         item.serialized ? 'Serial' : 'Bulk',
-        //         style: TextStyle(
-        //           fontSize: 9,
-        //           color: item.serialized ? Colors.purple : Colors.orange,
-        //           fontWeight: FontWeight.w500,
-        //         ),
-        //         textAlign: TextAlign.center,
-        //       ),
-        //     ),
-        //   ),
-        // ),
 
         // Status Cell
         DataCell(

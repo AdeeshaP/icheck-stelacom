@@ -7,7 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart';
 import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/constants.dart';
-import 'package:icheck_stelacom/providers/appstate_provieder.dart';
 import 'package:icheck_stelacom/responsive.dart';
 import 'package:icheck_stelacom/screens/Enroll/enroll_capture_screen.dart';
 import 'package:icheck_stelacom/screens/home/first_screen.dart';
@@ -21,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliding_widget/sliding_widget.dart';
 import 'package:unique_identifier/unique_identifier.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 
 class EnrollmentPreview extends StatefulWidget {
   final String imagePath;

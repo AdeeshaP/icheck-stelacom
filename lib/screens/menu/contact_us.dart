@@ -11,7 +11,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../providers/appstate_provieder.dart';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 
 class ContactUs extends StatefulWidget {
   final int index3;

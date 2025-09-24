@@ -8,7 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart';
 import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/constants.dart';
-import 'package:icheck_stelacom/providers/appstate_provieder.dart';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 import 'package:icheck_stelacom/responsive.dart';
 import 'package:icheck_stelacom/screens/home/first_screen.dart';
 import '../../components/utils/attendance_successful_popup.dart';

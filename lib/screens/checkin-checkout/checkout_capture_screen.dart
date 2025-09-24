@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 import 'package:icheck_stelacom/screens/checkin-checkout/checkout_preview_screen.dart';
 import 'package:icheck_stelacom/responsive.dart';
 import 'package:camera/camera.dart';
@@ -11,7 +12,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:icheck_stelacom/app-services/api_service.dart';
 import 'package:icheck_stelacom/constants.dart';
 import 'package:icheck_stelacom/main.dart';
-import 'package:icheck_stelacom/providers/appstate_provieder.dart';
 import 'package:icheck_stelacom/screens/home/first_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';

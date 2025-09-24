@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:icheck_stelacom/no_permisisons.dart';
-import 'package:icheck_stelacom/providers/appstate_provieder.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:icheck_stelacom/providers/appstate_provider.dart';
 import 'package:icheck_stelacom/screens/enroll/code_verification.dart';
 import 'package:icheck_stelacom/screens/home/first_screen.dart';
 import 'package:path_provider/path_provider.dart';
